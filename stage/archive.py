@@ -4,12 +4,12 @@
     python3 stage/archive.py
 
 Reads the feed history (stage/history.py), the JOMO SFO-WAM catalogue of sources, the page times
-lifted by stage/pagetime.py and REVOTT's 400 keys, and writes docs/data/:
+lifted by stage/pagetime.py and REVOTT's keys, and writes docs/data/:
 
     index.json             as-of, the days held with their item counts and TNLDY ranges
     sources.json           id -> [label, domain, perspective, date-only]
     coverage.json          per source, the stretches across which it was being read: [[from, to], ...]
-    keys.json              REVOTT's 400 keys: [x, reading, apocalypse layers]
+    keys.json              REVOTT's keys: [x, reading, apocalypse layers]
     days/YYYY-MM-DD.json   the items whose instant falls on that day in Nsukka
 
 and the untracked .pending-pages.json, the article pages not yet read for their own time.

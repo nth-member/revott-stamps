@@ -13,8 +13,8 @@ lies in the window:
     |Z(item) − Z(pair)| ≤ 100·ε
 
 0.01 X is one day; 0.0001 X, the last digit of a key, is 14.4 minutes. The variac runs from one second to five
-days. Y is a value, a range with a step, or the 400 keys; X is one key, a range of keys, a layer (seals,
-trumpets, vials, horns; hidden, revealed or both) or all 400 keys. Every pair is stamped, once per distinct Z,
+days. Y is a value, a range with a step, or REVOTT's 401 keys; X is one key, a range of keys, a layer (seals,
+trumpets, vials, horns; hidden, revealed or both) or all 401 keys. Every pair is stamped, once per distinct Z,
 since only Y + X sets the TNLDY; pairs on one level line share their items and each remains its own reading.
 A stamp records what fell in the window, and nothing more.
 
@@ -68,7 +68,7 @@ arriving later belong to a later reading.
 |---|---|
 | `stage/history.py` | keeps every JOMO SFO-WAM feed snapshot, which otherwise age out of that repository's reflog |
 | `stage/pagetime.py` | reads each article page once for the time it states: this project's user agent, robots.txt obeyed, one request per site every two seconds, a site that refuses left alone; Google News links lead to Google and are not read |
-| `stage/archive.py` | one instant per item, filed on Nsukka's days in `docs/data/days/`, with the index, the sources, their coverage and REVOTT's 400 keys |
+| `stage/archive.py` | one instant per item, filed on Nsukka's days in `docs/data/days/`, with the index, the sources, their coverage and REVOTT's 401 keys |
 | `stage/standing.py` | the standing requests' records |
 | `stage/stamp.py` | the stamp, exactly: the reference for `docs/stamp.js` |
 | `stage/refresh.sh [--push]` | all of the above; commits only `docs/data` and `docs/stamps`, one rolling commit per Nsukka day |
@@ -84,7 +84,7 @@ each item's headline, link, source and times — no summaries.
 
 `tests/fidelity.mjs` runs ten requests through the browser's `docs/stamp.js` and the reference
 `stage/stamp.py` — single pairs on every clock, a one-second window, a pair whose TNLDY is passed over, the
-40,400 pairs of Y 82.30 … 83.30 by 0.01 against all 400 keys, and the 400 keys against the trumpets — and
+40,501 pairs of Y 82.30 … 83.30 by 0.01 against all 401 keys, and the 401 keys against the trumpets — and
 compares the records byte for byte, SHA-256 included: 10/10 identical.
 
     node tests/fidelity.mjs

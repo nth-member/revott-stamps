@@ -84,7 +84,7 @@ Vary Y, vary X, or both: every pair in the request is stamped.</p>
   <div class="grid">
     <div>
       <label for="ym">Y</label>
-      <select id="ym"><option value="value">one value</option><option value="range">a range</option><option value="keys">the 400 keys</option></select>
+      <select id="ym"><option value="value">one value</option><option value="range">a range</option><option value="keys" id="ykeys">the keys</option></select>
       <div class="row" style="margin-top:6px">
         <input id="yv" class="mono" value="82.80" inputmode="decimal" aria-label="Y">
         <input id="yf" class="mono" value="82.30" inputmode="decimal" aria-label="Y from" hidden>
@@ -95,7 +95,7 @@ Vary Y, vary X, or both: every pair in the request is stamped.</p>
     </div>
     <div>
       <label for="xm">X — the SFO-BB keys</label>
-      <select id="xm"><option value="key">one key</option><option value="range">a range of keys</option><option value="layer">a layer</option><option value="all">all 400 keys</option></select>
+      <select id="xm"><option value="key">one key</option><option value="range">a range of keys</option><option value="layer">a layer</option><option value="all" id="xkeys">all the keys</option></select>
       <div class="row" style="margin-top:6px">
         <input id="xk" class="mono" list="keys" value="-16.5721" aria-label="X key">
         <input id="xf" class="mono" list="keys" value="-16.6" aria-label="X from" hidden>
@@ -217,7 +217,7 @@ function showModes() {
   $("#yv").hidden = ym !== "value"; ["#yf", "#yt", "#ys"].forEach(s => $(s).hidden = ym !== "range");
   $("#xk").hidden = xm !== "key"; $("#xf").hidden = $("#xt").hidden = xm !== "range"; $("#xl").hidden = $("#xh").hidden = xm !== "layer";
   const k = KEYMAP.get(Number($("#xk").value));
-  $("#xnote").textContent = xm === "key" ? (k ? "«" + k[1] + "»" : "not one of the 400 keys") : "";
+  $("#xnote").textContent = xm === "key" ? (k ? "«" + k[1] + "»" : "not one of the " + KEYS.length + " keys") : "";
   const yk = ym === "value" ? KEYMAP.get(Number($("#yv").value)) : null;
   $("#ynote").textContent = yk ? "Y is a key: «" + yk[1] + "» — each pair reads «X» is being «Y»." : "";
   readVariac();
@@ -351,6 +351,7 @@ async function standing() {
 (async () => {
   [KEYS, SRC, IDX] = await Promise.all(["keys.json", "sources.json", "index.json"].map(n => fetch("data/" + n).then(r => r.json())));
   KEYMAP = new Map(KEYS.map(k => [k[0], k]));
+  $("#ykeys").textContent = "the " + KEYS.length + " keys"; $("#xkeys").textContent = "all " + KEYS.length + " keys";
   $("#keys").innerHTML = KEYS.map(k => '<option value="' + k[0] + '">' + esc(k[1].slice(0, 80)) + "</option>").join("");
   $("#firstr").textContent = when(IDX.first_reading) + " Nsukka";
   tick(); domChips();

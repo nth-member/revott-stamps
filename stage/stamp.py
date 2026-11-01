@@ -10,8 +10,8 @@ read on the Nsukka/Yg clock -- lies in that window:
 Everything is compared in TNLDY, so a window that meets a Yg recalibration is handled by the clock
 itself: TNLDY passed over holds no item, TNLDY met twice holds the items of both instants.
 
-A request names Y (a value, a range with a step, or the 400 keys) and X (keys: one, a range, a layer,
-or all 400); every pair is stamped, once per distinct Z, since only Y + X sets the TNLDY.
+A request names Y (a value, a range with a step, or REVOTT's keys) and X (keys: one, a range, a layer,
+or all of them); every pair is stamped, once per distinct Z, since only Y + X sets the TNLDY.
 """
 from __future__ import annotations
 
