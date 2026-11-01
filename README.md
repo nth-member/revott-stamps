@@ -42,8 +42,10 @@ first seen here, which bounds both from above. The reconciled clock takes, in or
 | `d` | the feed's time, from a source whose feed gives only the day (most items at 00:00 or 12:00:00) |
 | `s` | the moment the item was first seen, when no stated time stands |
 
-A page time with no zone that differs from the feed's by whole hours is the publisher's local wall-clock, and
-the feed's time is taken. The page can also stamp on one clock alone: the page's, the feed's or first seen.
+When the page's and the feed's times differ by a whole number of hours, one of them is local time written as
+UTC; for a publisher east of UTC, where nearly every source here is, that one reads late, and the earlier is
+taken (Anadolu's pages read 3 hours late, The Diplomat's 9, for example). A page time with no zone that
+disagrees with the feed's otherwise yields to it. The page can also stamp on one clock alone: the page's, the feed's or first seen.
 
 ## NULL is never zero
 

@@ -22,8 +22,9 @@ it was first seen here, which bounds both from above. One instant is chosen, and
     d   the feed's time from a source whose feed gives the day only (most items at 00:00 or 12:00:00)
     s   the moment it was first seen, when neither stated time stands
 
-A page time without a zone that differs from the feed's by whole hours is the publisher's local
-wall-clock: the feed's time is taken. An item is stored as
+When page and feed differ by a whole number of hours, one of them is local time written as UTC; for a
+publisher east of UTC, where nearly every source here is, that one reads late, so the earlier is taken
+(not for day-only feeds). A page time without a zone that disagrees with the feed otherwise yields to it. An item is stored as
 [instant, how, source, title, url, first seen, feed time, page time, note], times in epoch ms.
 The same inputs always give the same files. Standard library only.
 """
@@ -94,21 +95,26 @@ def date_only_sources(items: list[dict]) -> set[str]:
 
 def reconcile(feed: int | None, page, seen: int, capped: bool, date_only: bool):
     """-> (instant, how, note)"""
+    feed_ok = feed is not None and not capped and feed <= seen + TOL
     note = ""
     if page is not None:
         p, _res, zone = page
         if p > seen + TOL:
             note = "the page states a time after the item was first seen"
-        elif not zone and feed is not None and abs(p - feed) > TOL:
-            d = abs(p - feed)
-            whole_hours = min(d % HOUR, HOUR - d % HOUR) <= TOL
-            note = ("the page gives local time without a zone" if whole_hours
-                    else "the page's time has no zone and disagrees with the feed's")
+        elif not feed_ok or abs(p - feed) <= TOL:
+            return p, "p", "" if (zone or feed_ok) else "the page gives no zone; read as UTC"
         else:
-            if feed is not None and abs(p - feed) > TOL:
-                note = f"the feed states {round((feed - p) / 60000):+d} min"
-            return p, "p", note
-    if feed is not None and not capped and feed <= seen + TOL:
+            d = abs(p - feed)
+            hours = round(d / HOUR)
+            if hours >= 1 and abs(d - hours * HOUR) <= TOL and not date_only:
+                # A zone written wrong on one side: local time labelled as UTC reads late for a
+                # publisher east of UTC, where nearly every source here is. The earlier is taken.
+                t = min(p, feed)
+                return t, ("p" if t == p else "f"), f"page and feed differ by {hours} h, a zone written wrong; the earlier taken"
+            if zone:
+                return p, "p", f"the feed states {round((feed - p) / 60000):+d} min"
+            note = "the page's time has no zone and disagrees with the feed's"
+    if feed_ok:
         if date_only:
             return feed, "d", note or "the feed gives the day only"
         return feed, "f", note
