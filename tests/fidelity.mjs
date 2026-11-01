@@ -1,0 +1,36 @@
+// The browser's stamps (docs/stamp.js) must equal the reference's (stage/stamp.py) byte for byte.
+//   node tests/fidelity.mjs
+import { readFileSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const ROOT = new URL("..", import.meta.url).pathname;
+globalThis.NsukkaYg = require(ROOT + "docs/nsukka-yg-clock.js");
+const Stamp = require(ROOT + "docs/stamp.js");
+const S = Stamp.create(async name => JSON.parse(readFileSync(ROOT + "docs/data/" + name, "utf8")));
+const SIX = ["geopolitical-analysis", "middle-east", "balkans", "world", "russia-eurasia", "science-technology"];
+const ALL = [...new Set(Object.values(JSON.parse(readFileSync(ROOT + "docs/data/sources.json"))).map(v => v[1]))].sort();
+const R = (y, x, eps, clock, domains) => ({ y, x, eps, clock, domains });
+const cases = [
+  R({ mode: "value", value: "82.80" }, { mode: "key", x: "-16.5721" }, "0.00005", "reconciled", SIX),
+  R({ mode: "value", value: "82.80" }, { mode: "key", x: "-16.5721" }, "0.00005", "seen", SIX),
+  R({ mode: "value", value: "82.80" }, { mode: "key", x: "-16.5721" }, "0.0005", "feed", SIX),
+  R({ mode: "value", value: "82.80" }, { mode: "key", x: "-16.5721" }, "0.005", "page", ALL),
+  R({ mode: "value", value: "82.80" }, { mode: "key", x: "-16.40" }, "0.0000001157", "reconciled", ALL),
+  R({ mode: "value", value: "24.50" }, { mode: "range", from: "-16.6", to: "-16.0" }, "0.5", "reconciled", SIX),
+  R({ mode: "value", value: "24.545" }, { mode: "key", x: "42.28" }, "0.00005", "reconciled", SIX),     // its Z is passed over
+  R({ mode: "range", from: "82.30", to: "83.30", step: "0.01" }, { mode: "all" }, "0.00005", "reconciled", ["world"]),
+  R({ mode: "keys" }, { mode: "layer", layer: "trumpets", hidden: "both" }, "0.01", "reconciled", ALL),
+  R({ mode: "range", from: "62.00", to: "62.40", step: "0.05" }, { mode: "layer", layer: "seals", hidden: "no" }, "0.05", "seen", SIX),
+];
+let bad = 0;
+for (const [k, req] of cases.entries()) {
+  const js = Stamp.canonical(await S.run(req));
+  const py = execFileSync("python3", [ROOT + "stage/stamp.py", "--json", JSON.stringify(req)], { maxBuffer: 1 << 30 }).toString().trim();
+  const rec = JSON.parse(js), n = Object.keys(rec.stamps).length, items = Object.values(rec.stamps).reduce((s, v) => s + (v.items ? v.items.length : 0), 0);
+  const same = js === py;
+  if (!same) { bad++; writeFileSync(`/tmp/fid-${k}-js.json`, js); writeFileSync(`/tmp/fid-${k}-py.json`, py); }
+  console.log(`${same ? "same" : "DIFF"}  case ${k}: ${rec.pairs.length} pairs, ${n} TNLDY, ${items} items stamped, id ${rec.id.slice(0, 12)}`);
+}
+console.log(bad ? `FAIL ${bad} of ${cases.length}` : `${cases.length}/${cases.length} identical`);
+process.exit(bad ? 1 : 0);

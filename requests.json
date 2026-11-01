@@ -1,0 +1,48 @@
+[
+ {
+  "id": "y24p50-all-keys",
+  "title": "Y 24.50 · all 400 keys · ±7.2 min · the six feeds",
+  "request": {
+   "y": {
+    "mode": "value",
+    "value": "24.50"
+   },
+   "x": {
+    "mode": "all"
+   },
+   "eps": "0.00005",
+   "clock": "reconciled",
+   "domains": [
+    "balkans",
+    "geopolitical-analysis",
+    "middle-east",
+    "russia-eurasia",
+    "science-technology",
+    "world"
+   ]
+  }
+ },
+ {
+  "id": "y82p80-all-keys",
+  "title": "Y 82.80 · all 400 keys · ±7.2 min · the six feeds",
+  "request": {
+   "y": {
+    "mode": "value",
+    "value": "82.80"
+   },
+   "x": {
+    "mode": "all"
+   },
+   "eps": "0.00005",
+   "clock": "reconciled",
+   "domains": [
+    "balkans",
+    "geopolitical-analysis",
+    "middle-east",
+    "russia-eurasia",
+    "science-technology",
+    "world"
+   ]
+  }
+ }
+]

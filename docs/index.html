@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>REVOTT stamps</title>
+<meta name="description" content="Feed items stamped onto a (Y, X) of REVOTT, read from Nsukka on the Yg clock, within a variable window.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='26' fill='none' stroke='%232a78d6' stroke-width='6'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%232a78d6'/%3E%3C/svg%3E">
+<style>
+:root{
+  color-scheme: light;
+  --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --line:#e1e0d9; --axis:#c3c2b7; --accent:#2a78d6; --hit:#1f8a4c; --warn:#b26b00; --null:#b23b3b;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --plane:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --line:#2c2c2a; --axis:#383835; --accent:#3987e5; --hit:#4cc27e; --warn:#e3a33b; --null:#e06c6c;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --plane:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+  --line:#2c2c2a; --axis:#383835; --accent:#3987e5; --hit:#4cc27e; --warn:#e3a33b; --null:#e06c6c;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--plane);color:var(--ink);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px 48px}
+h1{margin:0 0 4px;font-size:24px;letter-spacing:.06em}
+h2{margin:0 0 10px;font-size:16px}
+.sub{color:var(--ink-2);margin:0 0 14px;max-width:760px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin:14px 0}
+.clockline{font-size:13px;color:var(--ink-2)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+label{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+input,select,button{font:inherit;color:var(--ink);background:var(--plane);border:1px solid var(--axis);border-radius:8px;padding:7px 9px}
+input[type=range]{width:100%;padding:0;border:0;background:transparent;accent-color:var(--accent)}
+.grid select,.grid .row input{width:100%;max-width:100%}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row > *{flex:1 1 90px;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--axis);border-radius:999px;padding:4px 10px;font-size:13px;cursor:pointer;background:var(--plane);user-select:none}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.go{background:var(--ink);color:var(--plane);border-color:var(--ink);font-weight:600;padding:9px 22px;cursor:pointer}
+.go:disabled{opacity:.5}
+.note{font-size:13px;color:var(--muted);margin:6px 0 0}
+.readout{font-size:14px;margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:10px 0}
+.tile{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--plane)}
+.tile .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tile .v{font-size:20px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{position:sticky;top:0;background:var(--surface);font-weight:600;color:var(--ink-2)}
+tr.pick{cursor:pointer}
+tr.pick:hover{background:var(--plane)}
+td.num,th.num{text-align:right;white-space:nowrap}
+a{color:var(--accent)}
+.st{font-size:12px;border-radius:6px;padding:1px 6px;border:1px solid var(--line);white-space:nowrap}
+.st.stamped{color:var(--hit);border-color:var(--hit)}
+.st.pending,.st.partly{color:var(--warn);border-color:var(--warn)}
+.st.null,.st.before{color:var(--null);border-color:var(--null)}
+.how{display:inline-block;width:1.6em;text-align:center;border-radius:5px;border:1px solid var(--line);font-size:11px}
+.reading{color:var(--ink-2)}
+details summary{cursor:pointer;color:var(--ink-2)}
+.foot{color:var(--muted);font-size:12px;margin-top:26px;line-height:1.6}
+@media (max-width:560px){ h1{font-size:20px} .tile .v{font-size:17px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>REVOTT STAMPS</h1>
+<p class="sub">Feed items stamped onto a (Y, X) of REVOTT. A pair reads TNLDY Z = 14160 + 100·(Y + X); an item is
+stamped onto it when its own instant, read from Nsukka on the Yg clock, lies within the variac's window of that Z.
+Vary Y, vary X, or both: every pair in the request is stamped.</p>
+<div class="card clockline mono" id="clock">—</div>
+
+<div class="card">
+  <div class="grid">
+    <div>
+      <label for="ym">Y</label>
+      <select id="ym"><option value="value">one value</option><option value="range">a range</option><option value="keys">the 400 keys</option></select>
+      <div class="row" style="margin-top:6px">
+        <input id="yv" class="mono" value="82.80" inputmode="decimal" aria-label="Y">
+        <input id="yf" class="mono" value="82.30" inputmode="decimal" aria-label="Y from" hidden>
+        <input id="yt" class="mono" value="83.30" inputmode="decimal" aria-label="Y to" hidden>
+        <input id="ys" class="mono" value="0.01" inputmode="decimal" aria-label="Y step" hidden>
+      </div>
+      <p class="note" id="ynote"></p>
+    </div>
+    <div>
+      <label for="xm">X — the SFO-BB keys</label>
+      <select id="xm"><option value="key">one key</option><option value="range">a range of keys</option><option value="layer">a layer</option><option value="all">all 400 keys</option></select>
+      <div class="row" style="margin-top:6px">
+        <input id="xk" class="mono" list="keys" value="-16.5721" aria-label="X key">
+        <input id="xf" class="mono" list="keys" value="-16.6" aria-label="X from" hidden>
+        <input id="xt" class="mono" list="keys" value="-16.0" aria-label="X to" hidden>
+        <select id="xl" aria-label="layer" hidden><option value="seals">seals</option><option value="trumpets">trumpets</option><option value="vials">vials</option><option value="horns">horns</option></select>
+        <select id="xh" aria-label="hidden or revealed" hidden><option value="both">hidden and revealed</option><option value="no">revealed</option><option value="yes">hidden</option></select>
+      </div>
+      <datalist id="keys"></datalist>
+      <p class="note reading" id="xnote"></p>
+    </div>
+    <div>
+      <label for="clk">clock</label>
+      <select id="clk">
+        <option value="reconciled">reconciled — page, feed or first seen, as each item allows</option>
+        <option value="page">the page's own time only</option>
+        <option value="feed">the feed's time only</option>
+        <option value="seen">first seen here only</option>
+      </select>
+      <p class="note">The reconciled clock takes the page's stated time where it stands, else the feed's, else the moment
+        the item was first seen, which bounds both from above.</p>
+    </div>
+  </div>
+  <div style="margin-top:14px">
+    <label for="var">variac — the window about each pair's TNLDY</label>
+    <input type="range" id="var" min="0" max="1000" step="1">
+    <div class="row readout"><span class="mono" id="vread">—</span>
+      <span style="flex:0 1 210px"><input id="eps" class="mono" inputmode="decimal" aria-label="ε in X units" style="width:100%"></span></div>
+    <p class="note" id="vnote"></p>
+  </div>
+  <div style="margin-top:12px">
+    <label>feeds</label>
+    <div class="chips" id="doms"></div>
+    <p class="note"><a href="#" id="dall">all</a> · <a href="#" id="dsix">the six</a> · <a href="#" id="dnone">none</a></p>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <button class="go" id="go" style="flex:0 0 auto">STAMP</button>
+    <span class="note" id="prog" style="flex:1 1 200px"></span>
+  </div>
+</div>
+
+<div id="out"></div>
+
+<div class="card" id="standing" hidden><h2>Standing requests</h2><div id="stand"></div></div>
+
+<div class="foot">
+  <p><b>The clock.</b> TNLDY is read from Nsukka (WAT, UTC+01:00) on the engine's own year, Yg = 17640/48.3 days, laid on
+  Nsukka's calendar from 1 December 00:00 and recalibrated at every Yg year (<a href="nsukka-yg-clock.js">nsukka-yg-clock.js</a>).
+  A TNLDY passed over at a recalibration has no instant and holds no item; one met twice holds the items of both instants.</p>
+  <p><b>The stamp.</b> |Z(item) − Z(pair)| ≤ 100·ε, compared exactly. The variac ε is in X units: 0.01 X is one day,
+  0.0001 X the last digit of a key (14.4 minutes). Pairs on one level line Y + X = constant share their items; each pair
+  remains its own reading. A stamp records what fell in the window, nothing more.</p>
+  <p><b>NULL is never zero.</b> The feeds are read every 15 minutes while the reading computer runs; each source counts as
+  covered for a window only if a reading of it reached back across the whole window. Before the first reading
+  (<span id="firstr"></span>) there is no archive.</p>
+  <p><b>Sources.</b> The JOMO SFO-WAM knowledge-server feeds (<a href="https://3pp-noah.github.io/jomo-sfo-wam/">3pp-noah/jomo-sfo-wam</a>);
+  each article's own page is read once for the time it states, obeying robots.txt. Publishers that refuse keep their feed time.</p>
+  <p>Part of <a href="https://3pp-noah.github.io/">3PP-NOAH</a> · <a href="https://nth-member.github.io/revott/">REVOTT</a> ·
+  <a href="https://nth-member.github.io/member/">the nth member</a></p>
+</div>
+</div>
+
+<script src="nsukka-yg-clock.js"></script>
+<script src="stamp.js"></script>
+<script>
+"use strict";
+const $ = s => document.querySelector(s), Yg = window.NsukkaYg;
+const S = Stamp.create(name => fetch("data/" + name).then(r => { if (!r.ok) throw new Error(name + ": HTTP " + r.status); return r.json(); }));
+const SIX = ["geopolitical-analysis", "middle-east", "balkans", "world", "russia-eurasia", "science-technology"];
+const NAMES = { "geopolitical-analysis": "geopolitical analysis", "middle-east": "Middle East", "balkans": "Balkans", "world": "world",
+  "russia-eurasia": "Russia & Eurasia", "science-technology": "science & technology", "asia": "Asia", "africa": "Africa & Nigeria",
+  "defense-nuclear": "defence & nuclear", "economic": "economic", "religious": "religious", "sports": "sports" };
+const HOW = { p: "page", f: "feed", d: "feed, day only", s: "first seen" };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+let KEYS = [], KEYMAP = new Map(), SRC = {}, IDX = null, doms = new Set(SIX), LAST = null;
+
+/* ---- the clock line ---- */
+function tick() {
+  const now = Date.now(), r = Yg.reading(now), nx = Yg.nextRecalibration(now);
+  $("#clock").textContent = "Nsukka " + Yg.nsukka(now).slice(0, 19) + " · TNLDY " + r.z.toFixed(6) + " · Yg " + r.yg +
+    ", yearday " + r.yearday.toFixed(4) + " · next recalibration " + Yg.nsukka(nx.at).slice(0, 16) + " Nsukka (" + nx.stepText + ")" +
+    (IDX ? " · archive to " + Yg.nsukka(IDX.as_of).slice(0, 16) + " Nsukka" : "");
+}
+setInterval(tick, 1000); tick();
+
+/* ---- the variac: log scale from one second to five days; ε in X units (1 X = 8 640 000 s) ---- */
+const SEC_LO = 1, SEC_HI = 432000;
+const posToSec = p => SEC_LO * Math.pow(SEC_HI / SEC_LO, p / 1000);
+const secToPos = s => Math.round(1000 * Math.log(s / SEC_LO) / Math.log(SEC_HI / SEC_LO));
+function sig3(x) { return Number(x.toPrecision(3)).toString(); }
+function epsStr(sec) { const e = sec / 8640000; return e >= 1e-6 ? sig3(e) : e.toExponential(2).replace(/e/, "e"); }
+function offTxt(sec) {
+  const a = Math.abs(sec), p = v => String(v).padStart(2, "0");
+  return a < 60 ? a.toFixed(0) + " s" : a < 3600 ? Math.floor(a / 60) + " min " + p(Math.round(a % 60)) + " s"
+       : a < 86400 ? Math.floor(a / 3600) + " h " + p(Math.round((a % 3600) / 60)) + " min" : (a / 86400).toFixed(2) + " d";
+}
+function human(sec) {
+  const a = Math.abs(sec);
+  return a < 60 ? a.toFixed(a < 10 ? 1 : 0) + " s" : a < 3600 ? (a / 60).toFixed(1) + " min" : a < 86400 ? (a / 3600).toFixed(2) + " h" : (a / 86400).toFixed(2) + " d";
+}
+function readVariac() {
+  const e = Number($("#eps").value);
+  if (!(e > 0)) { $("#vread").textContent = "ε must be a positive number of X units"; return; }
+  const sec = e * 8640000;
+  $("#vread").textContent = "±" + human(sec) + " · ε = " + $("#eps").value + " X · ±" + (100 * e).toPrecision(3) + " TNLDY";
+  // for one key: where the window meets the neighbouring keys
+  const x = $("#xm").value === "key" ? Number($("#xk").value) : null, i = x == null ? -1 : KEYS.findIndex(k => k[0] === x);
+  if (i >= 0) {
+    const g = Math.min(i > 0 ? x - KEYS[i - 1][0] : Infinity, i < KEYS.length - 1 ? KEYS[i + 1][0] - x : Infinity);
+    $("#vnote").textContent = "Windows of this key and its nearer neighbour (" + sig3(g) + " X away) meet at ε = " + sig3(g / 2) +
+      " X (±" + human(g / 2 * 8640000) + ")" + (e > g / 2 ? "; this window reaches past it." : ".");
+  } else $("#vnote").textContent = "With Y stepped by δ, ε = δ/2 tiles time: each item falls in exactly one window.";
+}
+$("#var").oninput = () => { $("#eps").value = epsStr(posToSec(+$("#var").value)); readVariac(); };
+$("#eps").oninput = () => { const e = Number($("#eps").value); if (e > 0) $("#var").value = secToPos(e * 8640000); readVariac(); };
+
+/* ---- the form ---- */
+function showModes() {
+  const ym = $("#ym").value, xm = $("#xm").value;
+  $("#yv").hidden = ym !== "value"; ["#yf", "#yt", "#ys"].forEach(s => $(s).hidden = ym !== "range");
+  $("#xk").hidden = xm !== "key"; $("#xf").hidden = $("#xt").hidden = xm !== "range"; $("#xl").hidden = $("#xh").hidden = xm !== "layer";
+  const k = KEYMAP.get(Number($("#xk").value));
+  $("#xnote").textContent = xm === "key" ? (k ? "«" + k[1] + "»" : "not one of the 400 keys") : "";
+  const yk = ym === "value" ? KEYMAP.get(Number($("#yv").value)) : null;
+  $("#ynote").textContent = yk ? "Y is a key: «" + yk[1] + "» — each pair reads «X» is being «Y»." : "";
+  readVariac();
+}
+["#ym", "#xm", "#xk", "#yv"].forEach(s => $(s).addEventListener("input", showModes));
+function domChips() {
+  const counts = {};
+  for (const v of Object.values(SRC)) counts[v[1]] = (counts[v[1]] || 0) + 1;
+  $("#doms").innerHTML = Object.keys(counts).sort((a, b) => (SIX.includes(b) - SIX.includes(a)) || a.localeCompare(b))
+    .map(d => '<span class="chip' + (doms.has(d) ? " on" : "") + '" data-d="' + d + '" role="button" tabindex="0">' + esc(NAMES[d] || d) + " · " + counts[d] + "</span>").join("");
+  document.querySelectorAll(".chip").forEach(c => c.onclick = c.onkeydown = e => {
+    if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault(); const d = c.dataset.d; doms.has(d) ? doms.delete(d) : doms.add(d); domChips(); });
+}
+$("#dall").onclick = e => { e.preventDefault(); doms = new Set(Object.values(SRC).map(v => v[1])); domChips(); };
+$("#dsix").onclick = e => { e.preventDefault(); doms = new Set(SIX); domChips(); };
+$("#dnone").onclick = e => { e.preventDefault(); doms = new Set(); domChips(); };
+
+function request() {
+  const ym = $("#ym").value, xm = $("#xm").value;
+  const y = ym === "value" ? { mode: "value", value: $("#yv").value.trim() } : ym === "range"
+    ? { mode: "range", from: $("#yf").value.trim(), to: $("#yt").value.trim(), step: $("#ys").value.trim() } : { mode: "keys" };
+  const x = xm === "key" ? { mode: "key", x: $("#xk").value.trim() } : xm === "range" ? { mode: "range", from: $("#xf").value.trim(), to: $("#xt").value.trim() }
+    : xm === "layer" ? { mode: "layer", layer: $("#xl").value, hidden: $("#xh").value } : { mode: "all" };
+  return { y, x, eps: $("#eps").value.trim(), clock: $("#clk").value, domains: [...doms].sort() };
+}
+function fill(r) {
+  $("#ym").value = r.y.mode; $("#xm").value = r.x.mode;
+  if (r.y.mode === "value") $("#yv").value = r.y.value;
+  if (r.y.mode === "range") { $("#yf").value = r.y.from; $("#yt").value = r.y.to; $("#ys").value = r.y.step; }
+  if (r.x.mode === "key") $("#xk").value = r.x.x;
+  if (r.x.mode === "range") { $("#xf").value = r.x.from; $("#xt").value = r.x.to; }
+  if (r.x.mode === "layer") { $("#xl").value = r.x.layer; $("#xh").value = r.x.hidden || "both"; }
+  $("#eps").value = r.eps; $("#var").value = secToPos(Number(r.eps) * 8640000); $("#clk").value = r.clock || "reconciled";
+  doms = new Set(r.domains); domChips(); showModes();
+}
+function check(r) {
+  const num = /^-?\d+(\.\d+)?$/;
+  for (const v of [r.y.value, r.y.from, r.y.to, r.y.step, r.x.x, r.x.from, r.x.to]) if (v !== undefined && !num.test(v)) return "Y and X must be plain decimals, as 82.80 or -16.5721.";
+  if (r.y.mode === "range" && !(Number(r.y.step) > 0)) return "The Y step must be positive.";
+  if (r.y.mode === "range" && (Number(r.y.to) - Number(r.y.from)) / Number(r.y.step) > 36000) return "That Y range has more than 36 000 steps; widen the step.";
+  if (!(Number(r.eps) > 0)) return "ε must be positive.";
+  if (!r.domains.length) return "Choose at least one feed.";
+  return null;
+}
+
+/* ---- running and showing ---- */
+const badge = s => '<span class="st ' + (s === "stamped" ? "stamped" : s === "pending" || s.startsWith("partly") ? "pending" : s === "ahead" ? "" : "before") + '">' + esc(s) + "</span>";
+const when = ms => Yg.nsukka(ms).slice(0, 19);
+function pairsAt(rec) { const m = new Map(); for (const [y, x, z] of rec.pairs) { if (!m.has(z)) m.set(z, []); m.get(z).push([y, x]); } return m; }
+const trim = s => s.replace(/\.?0+$/, "");
+
+async function go() {
+  const r = request(), err = check(r);
+  if (err) { $("#prog").textContent = err; return; }
+  history.replaceState(null, "", "#" + encodeURIComponent(JSON.stringify(r)));
+  $("#go").disabled = true; $("#prog").textContent = "stamping…"; $("#out").innerHTML = "";
+  try {
+    const t0 = performance.now();
+    LAST = await S.run(r, async (n, of) => { $("#prog").textContent = "stamping… " + n + " of " + of + " TNLDY"; await new Promise(f => setTimeout(f, 0)); });
+    $("#prog").textContent = "done in " + ((performance.now() - t0) / 1000).toFixed(1) + " s";
+    show(LAST);
+  } catch (e) { $("#prog").textContent = "failed: " + e.message; }
+  $("#go").disabled = false;
+}
+$("#go").onclick = go;
+
+function show(rec) {
+  const zs = Object.keys(rec.stamps), at = pairsAt(rec), c = {};
+  let items = 0, over = 0;
+  for (const z of zs) { const s = rec.stamps[z]; c[s.status] = (c[s.status] || 0) + 1; items += s.items ? s.items.length : 0; if (!s.instants.length) over++; }
+  let h = '<div class="card"><h2>' + rec.pairs.length.toLocaleString() + (rec.pairs.length === 1 ? " pair" : " pairs") + " · " + zs.length.toLocaleString() + " TNLDY</h2>"
+    + '<div class="tiles">' + [["stamped", c["stamped"] || 0], ["items stamped", items], ["pending", (c["pending"] || 0) + (c["partly before the archive"] || 0)],
+      ["ahead", c["ahead"] || 0], ["before the archive", c["before the archive"] || 0], ["passed over", over]]
+      .map(([k, v]) => '<div class="tile"><div class="k">' + k + '</div><div class="v mono">' + v.toLocaleString() + "</div></div>").join("") + "</div>"
+    + '<p class="note mono">record ' + rec.id.slice(0, 16) + " · archive as of " + when(rec.as_of) + ' Nsukka · <a href="#" id="dl">download the record (JSON)</a></p>';
+  if (zs.length > 1) {
+    const rows = zs.filter(z => rec.stamps[z].status !== "ahead" && rec.stamps[z].status !== "before the archive");
+    h += '<p class="note">' + (rows.length ? "The TNLDY that the archive reaches; choose one to see its stamp." : "No pair of this request falls within the archive yet.") + "</p>";
+    if (rows.length) h += '<div class="tbl" style="max-height:420px"><table><tr><th class="num">TNLDY</th><th>pairs (Y, X)</th><th>Nsukka</th><th>status</th><th class="num">items</th></tr>'
+      + rows.slice(0, 1500).map(z => { const s = rec.stamps[z], p = at.get(z);
+        return '<tr class="pick" data-z="' + z + '"><td class="num mono">' + trim(z) + '</td><td class="mono">' + p.slice(0, 3).map(([y, x]) => "(" + trim(y) + ", " + trim(x) + ")").join(" ")
+          + (p.length > 3 ? " +" + (p.length - 3) : "") + '</td><td class="mono">' + (s.instants.length ? s.instants.map(when).join(" and ") : "passed over") + "</td><td>" + badge(s.status)
+          + '</td><td class="num mono">' + (s.items ? s.items.length : "—") + "</td></tr>"; }).join("") + "</table></div>";
+    const ahead = zs.filter(z => rec.stamps[z].status === "ahead").slice(0, 8);
+    if (ahead.length) h += '<p class="note">Next ahead: ' + ahead.map(z => { const s = rec.stamps[z]; return '<span class="mono">' + trim(z) + "</span> " + (s.instants.length ? when(s.instants[0]) : "passed over"); }).join(" · ") + "</p>";
+  }
+  h += '</div><div id="one"></div>';
+  $("#out").innerHTML = h;
+  $("#dl").onclick = e => { e.preventDefault(); const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([Stamp.canonical(rec)], { type: "application/json" })); a.download = "revott-stamp-" + rec.id.slice(0, 12) + ".json"; a.click(); };
+  document.querySelectorAll("tr.pick").forEach(tr => tr.onclick = () => one(rec, tr.dataset.z));
+  if (zs.length === 1) one(rec, zs[0]);
+}
+
+function one(rec, z) {
+  const s = rec.stamps[z], pairs = pairsAt(rec).get(z), first = pairs[0];
+  const kx = KEYMAP.get(Number(first[1])), ky = KEYMAP.get(Number(first[0]));
+  let h = '<div class="card"><h2 class="mono">Y ' + trim(first[0]) + " · X " + trim(first[1]) + (pairs.length > 1 ? " and " + (pairs.length - 1) + " more pairs on this line" : "") + "</h2>";
+  if (kx) h += '<p class="reading">«' + esc(kx[1]) + "»" + (ky ? " is being «" + esc(ky[1]) + "»" : "") + "</p>";
+  h += '<div class="tiles">' + [["TNLDY", trim(z)], ["Nsukka", s.instants.length ? s.instants.map(when).join(" and ") : "passed over"],
+    ["window", when(s.window[0]).slice(5) + " → " + when(s.window[1]).slice(5)], ["status", s.status], ["items", s.items ? s.items.length : "—"]]
+    .map(([k, v]) => '<div class="tile"><div class="k">' + k + '</div><div class="v mono" style="font-size:14px">' + esc(v) + "</div></div>").join("") + "</div>";
+  if (s.coverage) {
+    const name = id => esc(SRC[id] ? SRC[id][0] : id);
+    h += '<p class="note">Feeds across the window: <b>' + s.coverage.covered.length + "</b> covered · <b>" + s.coverage.partly.length + "</b> partly · <b>" + s.coverage.null.length + "</b> NULL (not being read: no item from them is not a zero)</p>";
+    if (s.coverage.null.length || s.coverage.partly.length) h += "<details><summary>which</summary><p class=\"note\">NULL: " + s.coverage.null.map(name).join(", ") + (s.coverage.partly.length ? "<br>partly: " + s.coverage.partly.map(name).join(", ") : "") + "</p></details>";
+  }
+  if (s.items && s.items.length) {
+    h += '<div class="tbl" style="margin-top:10px"><table><tr><th class="num">offset</th><th>Nsukka</th><th>source</th><th>headline</th><th>clock</th></tr>'
+      + s.items.map(([off, ms, how, src, title, url, note]) => '<tr><td class="num mono">' + (off.startsWith("-") ? "−" : "+") + offTxt(Number(off)) + '</td><td class="mono">' + when(ms).slice(11)
+        + '</td><td>' + esc(SRC[src] ? SRC[src][0] : src) + '</td><td><a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(title) + '</a></td><td><span class="how" title="' + esc(HOW[how] + (note ? " — " + note : "")) + '">' + how + "</span></td></tr>").join("")
+      + "</table></div>";
+  } else if (s.items) h += '<p class="note">Nothing fell in this window from the chosen feeds.</p>';
+  $("#one").innerHTML = h + "</div>";
+  $("#one").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+/* ---- standing requests (stage/standing.py) ---- */
+async function standing() {
+  let list; try { list = await (await fetch("stamps/index.json")).json(); } catch { return; }
+  if (!list.length) return;
+  $("#standing").hidden = false;
+  $("#stand").innerHTML = '<p class="note">Stamped by the reading computer as each window closes and settles (a day after it ends).</p>'
+    + '<div class="tbl"><table><tr><th>request</th><th class="num">stamped</th><th>latest</th><th></th></tr>' + list.map(r => '<tr><td>' + esc(r.title)
+    + '</td><td class="num mono">' + r.records + '</td><td class="mono">' + (r.latest ? esc(r.latest) : "—") + '</td><td><a href="stamps/' + esc(r.id) + '.json">records</a> · <a href="#' + encodeURIComponent(JSON.stringify(r.request)) + '" class="load">open</a></td></tr>').join("") + "</table></div>";
+  document.querySelectorAll("a.load").forEach(a => a.onclick = () => setTimeout(() => { fill(JSON.parse(decodeURIComponent(location.hash.slice(1)))); go(); }, 0));
+}
+
+/* ---- start ---- */
+(async () => {
+  [KEYS, SRC, IDX] = await Promise.all(["keys.json", "sources.json", "index.json"].map(n => fetch("data/" + n).then(r => r.json())));
+  KEYMAP = new Map(KEYS.map(k => [k[0], k]));
+  $("#keys").innerHTML = KEYS.map(k => '<option value="' + k[0] + '">' + esc(k[1].slice(0, 80)) + "</option>").join("");
+  $("#firstr").textContent = when(IDX.first_reading) + " Nsukka";
+  tick(); domChips();
+  let r = null;
+  try { if (location.hash.length > 1) r = JSON.parse(decodeURIComponent(location.hash.slice(1))); } catch { r = null; }
+  if (r) { fill(r); go(); } else { $("#eps").value = "0.00005"; $("#var").value = secToPos(432); showModes(); }
+  standing();
+})();
+</script>
+</body>
+</html>
