@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Keep every JOMO SFO-WAM feed snapshot, from the checkout's reflog, read-only.
+"""Keep every JOMO SFO-WAM feed snapshot, from the checkout's reflog and GitHub's log, read-only.
 
     python3 stage/history.py
 
-The FEEDS snapshot is one rolling commit, amended every 15 minutes and force-pushed, so its
-history exists only in the local reflog, which git's automatic gc trims to 30 days. This
-writes, into the history folder named in .paths.json:
+The FEEDS snapshot is one rolling commit, amended every 15 minutes and force-pushed. Until
+2026-11-03 this computer made it, so its history is in the checkout's reflog, which git's
+automatic gc trims to 30 days; since then GitHub makes it, and logs what each snapshot adds in
+feeds/history/ (JOMO SFO-WAM's feeds/history.py, 30 days kept), which this fetches and reads from
+origin/main. Together they write, into the history folder named in .paths.json:
 
     items.jsonl.gz     every distinct item (by id), as first seen, with
                        _first_seen = the generated time of the first snapshot that held it
@@ -73,6 +75,23 @@ def main():
         for i in f.get("items", []):
             if i["id"] not in items or items[i["id"]]["_first_seen"] > gen:
                 items[i["id"]] = dict(i, _first_seen=gen)
+    fetch = subprocess.run(["git", "-C", str(REPO), "fetch", "-q", "origin"], capture_output=True, text=True)
+    if fetch.returncode:
+        print("history: fetch failed, so GitHub's log is read as last fetched:", fetch.stderr.strip()[:200])
+    names = subprocess.run(["git", "-C", str(REPO), "ls-tree", "--name-only", "origin/main", "feeds/history/"],
+                           capture_output=True, text=True).stdout.split()
+    logged = 0
+    for name in names:
+        raw = blob(f"origin/main:{name}")
+        for line in gzip.decompress(raw).decode().splitlines() if raw else []:
+            r = json.loads(line)
+            gen = r["generated"]
+            logged += 1
+            cover.setdefault(gen, {"generated": gen, "commit": None, "sources": r["sources"], "failed": r["failed"],
+                                   "span": r["span"]})
+            for i in r["new"]:
+                if i["id"] not in items or items[i["id"]]["_first_seen"] > gen:
+                    items[i["id"]] = dict(i, _first_seen=gen)
     cat.stdin.close(); cat.wait()
 
     rows = sorted(items.values(), key=lambda i: (i["_first_seen"], i["id"]))
@@ -82,7 +101,7 @@ def main():
     with gzip.open(OUT / "coverage.jsonl.gz", "wt") as f:
         for c in sorted(cover.values(), key=lambda c: c["generated"]):
             f.write(json.dumps(c, separators=(",", ":")) + "\n")
-    print(f"{len(cover)} snapshots, {len(rows)} items, first {min(cover)} .. last {max(cover)}")
+    print(f"{len(cover)} snapshots ({logged} in GitHub's log), {len(rows)} items, first {min(cover)} .. last {max(cover)}")
 
 
 if __name__ == "__main__":

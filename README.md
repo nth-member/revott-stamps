@@ -66,14 +66,14 @@ arriving later belong to a later reading.
 
 | | |
 |---|---|
-| `stage/history.py` | keeps every JOMO SFO-WAM feed snapshot, which otherwise age out of that repository's reflog |
+| `stage/history.py` | keeps every JOMO SFO-WAM feed snapshot: those made on this computer from that repository's reflog, those made on GitHub (since 2026-11-03) from its 30-day log, `feeds/history/` — so a snapshot taken while this computer sleeps is kept when it wakes |
 | `stage/pagetime.py` | reads each article page once for the time it states: this project's user agent, robots.txt obeyed, one request per site every two seconds, a site that refuses left alone; Google News links lead to Google and are not read |
 | `stage/archive.py` | one instant per item, filed on Nsukka's days in `docs/data/days/`, with the index, the sources, their coverage and REVOTT's 401 keys |
 | `stage/standing.py` | the standing requests' records |
 | `stage/stamp.py` | the stamp, exactly: the reference for `docs/stamp.js` |
 | `stage/refresh.sh [--push]` | all of the above; commits only `docs/data` and `docs/stamps`, one rolling commit per Nsukka day |
 
-On the reading computer, five minutes after each feed refresh:
+On the reading computer, every 15 minutes:
 
     5-59/15 * * * * $HOME/revott-stamps/stage/cron.sh
 
@@ -101,7 +101,8 @@ cd ~ && ./refresh-all.sh            # refresh and commit, push nothing
 cd ~ && ./refresh-all.sh --check    # what GDELT has that is new; changes nothing
 ```
 
-JOMO SFO-WAM's feeds and REVOTT stamps also refresh themselves every 15 minutes, from cron.
+JOMO SFO-WAM's feeds also refresh themselves every 15 minutes, on GitHub; REVOTT stamps every 15
+minutes from the author's computer's cron.
 
 ## The nth-member sites
 

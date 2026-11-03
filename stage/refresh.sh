@@ -3,7 +3,7 @@
 #
 #   stage/refresh.sh [--push]
 #
-#   1  history.py     keep every JOMO SFO-WAM feed snapshot (they age out of its reflog in 30 days)
+#   1  history.py     keep every JOMO SFO-WAM feed snapshot (from its reflog and GitHub's 30-day log)
 #   2  pagetime.py    read up to 300 new article pages for the time they state
 #   3  archive.py     rebuild docs/data: one instant per item, filed on Nsukka's days; coverage
 #   4  standing.py    stamp the standing requests' pairs whose windows have closed and settled

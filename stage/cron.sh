@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The cron entry, five minutes after each JOMO SFO-WAM feed refresh:
+# The cron entry, every 15 minutes (JOMO SFO-WAM's feeds refresh on GitHub at minutes 7, 22, 37, 52):
 #   5-59/15 * * * * $HOME/revott-stamps/stage/cron.sh
 # Logs to ~/.cache/revott-stamps/refresh.log, kept to its last 2000 lines.
 LOG="$HOME/.cache/revott-stamps/refresh.log"
