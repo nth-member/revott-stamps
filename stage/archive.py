@@ -6,7 +6,8 @@
 Reads the feed history (stage/history.py), the JOMO SFO-WAM catalogue of sources, the page times
 lifted by stage/pagetime.py and REVOTT's keys, and writes docs/data/:
 
-    index.json             as-of, the days held with their item counts and TNLDY ranges
+    index.json             as-of, the days held with their item counts and TNLDY ranges, and the archive's
+                           earlier tier: GDELT's day sources from 2013-04-01 until the first feed reading
     sources.json           id -> [label, domain, perspective, date-only]
     coverage.json          per source, the stretches across which it was being read: [[from, to], ...]
     keys.json              REVOTT's keys: [x, reading, apocalypse layers]
@@ -39,7 +40,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from paths import HISTORY, JOMO, REVOTT  # noqa: E402
+from paths import GDELT, HISTORY, JOMO, REVOTT  # noqa: E402
 from pagetime import CACHE, parse_time  # noqa: E402
 import nsukka_yg_clock as clock  # noqa: E402
 
@@ -200,8 +201,18 @@ def main() -> int:
     dump(DATA / "sources.json", dict(sorted(sources.items())))
     dump(DATA / "coverage.json", coverage)
     dump(DATA / "keys.json", keys())
-    dump(DATA / "index.json", {"as_of": as_of, "first_reading": first, "items": len(items),
-                               "snapshots": len(cover), "how": dict(sorted(hows.items())), "days": index})
+    # The archive's earlier tier: GDELT's day sources (nth-member/gdelt), from its first day with source URLs
+    # until the first feed reading, at day precision. A day is Nsukka's calendar day, and the last one is cut
+    # off where the feeds begin. Days GDELT never published are listed, so that they read as NULL, never zero.
+    rng = json.loads((GDELT / "docs" / "range.json").read_text())
+    have = {p.stem for p in (GDELT / "docs" / "days").glob("*.json")}
+    start_day, last_day = dt.date.fromisoformat(rng["lo"]), dt.date.fromisoformat(nsukka_day(first - 1))
+    tier = [(start_day + dt.timedelta(days=k)).isoformat() for k in range((last_day - start_day).days + 1)]
+    archive_start = clock.ms_of(dt.datetime(start_day.year, start_day.month, start_day.day, tzinfo=clock.WAT))
+    gdelt = {"first": start_day.isoformat(), "last": last_day.isoformat(), "missing": [d for d in tier if d not in have],
+             "days": "../gdelt/days/", "page": "https://nth-member.github.io/gdelt/?date="}
+    dump(DATA / "index.json", {"as_of": as_of, "first_reading": first, "archive_start": archive_start, "gdelt": gdelt,
+                               "items": len(items), "snapshots": len(cover), "how": dict(sorted(hows.items())), "days": index})
     (ROOT / ".pending-pages.json").write_text(json.dumps(pending[::-1]))
     print(f"archive: {len(items)} items on {len(days)} days, as of "
           f"{dt.datetime.fromtimestamp(as_of / 1000, clock.WAT):%Y-%m-%d %H:%M} Nsukka; clocks {dict(hows)}; "

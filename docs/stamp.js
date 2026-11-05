@@ -79,12 +79,29 @@
     const coverage = (iv, a, b) => iv.some(([c0, c1]) => c0 <= a && b <= c1) ? "covered"
                                  : iv.some(([c0, c1]) => c0 <= b && a <= c1) ? "partly" : "null";
 
+    /* The GDELT days a window [a, b] touches within the archive's GDELT tier (its first day until the first
+       feed reading), as Nsukka dates, and that tier's coverage of the window; null if it misses the tier. */
+    const DAY_MS = 86400000, WAT_MS = 3600000;
+    const dayNo = t => { const n = t + WAT_MS, r = ((n % DAY_MS) + DAY_MS) % DAY_MS; return (n - r) / DAY_MS; };
+    function gdeltDays(a, b, idx) {
+      const t0 = idx.archive_start, t1 = idx.first_reading;
+      const lo = Math.max(a, t0), hi = Math.min(b, t1 - 1);
+      if (lo > hi) return null;
+      const d0 = dayNo(lo), d1 = dayNo(hi), missing = new Set(idx.gdelt.missing), present = [];
+      for (let d = d0; d <= d1; d++) {
+        const day = new Date(d * DAY_MS).toISOString().slice(0, 10);
+        if (!missing.has(day)) present.push(day);
+      }
+      const cov = !present.length ? "null" : present.length === d1 - d0 + 1 && t0 <= a && b < t1 ? "covered" : "partly";
+      return [present, cov];
+    }
+
     async function stampZ(z, eps, clockName, domains) {
       const [idx, srcs, cov] = await Promise.all([get("index.json"), get("sources.json"), get("coverage.json")]);
       const h = mul(int(100), eps), pos = CLOCKS[clockName], m = clockName === "reconciled" ? 0n : MARGIN;
       const lo = sub(z, h), hi = add(z, h), a = edge(lo, true), b = edge(hi, false);
-      const status = b < idx.first_reading ? "before the archive" : a > idx.as_of ? "ahead"
-                   : b > idx.as_of ? "pending" : a < idx.first_reading ? "partly before the archive" : "stamped";
+      const status = b < idx.archive_start ? "before the archive" : a > idx.as_of ? "ahead"
+                   : b > idx.as_of ? "pending" : a < idx.archive_start ? "partly before the archive" : "stamped";
       const base = { z: fmt(z, 6), instants: Y.instantsOfFrac(z[0], z[1]), window: [a, b], status };
       if (status === "before the archive" || status === "ahead") return base;
       const loF = Number(lo[0]) / Number(lo[1]) - Number(m) - DAYS_SLACK, hiF = Number(hi[0]) / Number(hi[1]) + Number(m) + DAYS_SLACK;
@@ -103,6 +120,8 @@
       const st = Object.fromEntries(chosen.map(s => [s, coverage(cov[s] || [], a, b)]));
       base.items = items.map(([off, r]) => [fmt(mul(off, int(86400)), 3), r[pos], r[1], r[2], r[3], r[4], r[8]]);
       base.coverage = Object.fromEntries(["covered", "partly", "null"].map(k => [k, chosen.filter(s => st[s] === k)]));
+      const g = gdeltDays(a, b, idx);
+      if (g) { base.gdelt = g[0]; base.coverage[g[1]].push("gdelt"); }    // the GDELT tier, at day precision
       return base;
     }
 

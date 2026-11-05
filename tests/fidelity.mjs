@@ -22,6 +22,14 @@ const cases = [
   R({ mode: "range", from: "82.30", to: "83.30", step: "0.01" }, { mode: "all" }, "0.00005", "reconciled", ["world"]),
   R({ mode: "keys" }, { mode: "layer", layer: "trumpets", hidden: "both" }, "0.01", "reconciled", ALL),
   R({ mode: "range", from: "62.00", to: "62.40", step: "0.05" }, { mode: "layer", layer: "seals", hidden: "no" }, "0.05", "seen", SIX),
+  // the GDELT tier: 2013-04-01 until the first feed reading, at day precision
+  R({ mode: "value", value: "24.50" }, { mode: "key", x: "0.0" }, "0.00005", "reconciled", SIX),         // two GDELT days, covered
+  R({ mode: "value", value: "66.185" }, { mode: "key", x: "0.0" }, "0.005", "reconciled", ALL),          // across the first reading
+  R({ mode: "value", value: "19.89" }, { mode: "key", x: "0.0" }, "0.003", "reconciled", SIX),           // days GDELT never published: NULL
+  R({ mode: "value", value: "19.89" }, { mode: "key", x: "0.0" }, "0.03", "page", SIX),                  // and around them: partly
+  R({ mode: "value", value: "16.90" }, { mode: "key", x: "0.0" }, "0.01", "reconciled", SIX),            // partly before the archive
+  R({ mode: "value", value: "24.50" }, { mode: "all" }, "0.005", "reconciled", ALL),
+  R({ mode: "keys" }, { mode: "key", x: "-16.5721" }, "0.005", "feed", SIX),
 ];
 let bad = 0;
 for (const [k, req] of cases.entries()) {

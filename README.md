@@ -1,6 +1,7 @@
 # REVOTT stamps
 
-**Feed items stamped onto a (Y, X) of REVOTT.** Served at https://nth-member.github.io/revott-stamps/.
+**Feed items stamped onto a (Y, X) of REVOTT; before the feeds, GDELT's day sources.** Served at
+https://nth-member.github.io/revott-stamps/.
 
 A pair reads one TNLDY:
 
@@ -51,9 +52,28 @@ disagrees with the feed's otherwise yields to it. The page can also stamp on one
 
 The feeds are read every 15 minutes while the reading computer runs. A source counts as **covered** for a
 window only when a reading of it reached back across the whole window; **partly** when one reached into it;
-otherwise **NULL**: nothing from it is not a zero. Every stamp lists its sources in these three groups.
-Before the archive's first reading (2026-09-28 05:32 Nsukka) there is no archive; a window not yet closed is
-**pending**, and one entirely ahead is **ahead**.
+otherwise **NULL**: nothing from it is not a zero. Every stamp lists its sources in these three groups. A
+window not yet closed is **pending**, and one entirely ahead is **ahead**.
+
+## Before the feeds: GDELT's day sources
+
+From 2013-04-01 00:00 Nsukka until the feeds' first reading (2026-09-28 05:32 Nsukka), the archive is GDELT's
+day sources ([nth-member/gdelt](https://nth-member.github.io/gdelt/)): for each day, the 250 most-cited source
+URLs by GDELT's article counts, one per domain and per path. GDELT dates them by the day it ingested its
+archive, so this tier is read at day precision. A window is filled with every Nsukka day it touches before the
+first reading: GDELT's date laid on Nsukka's calendar day, as REVOTT reads it. A day's sources are that day's,
+not items timed within the window, and they are one list per day, whatever feeds are chosen. The stamp
+records the days; the page loads each day's sources from the GDELT site.
+
+The tier is reported beside the feeds as one more source, `gdelt`:
+
+- **covered** when the whole window lies in the tier, on days GDELT published;
+- **partly** when the window reaches past the tier, or over a day GDELT never published (24 days, listed in
+  `docs/data/index.json`);
+- **NULL** when GDELT published none of the days the window touches.
+
+Before 2013-04-01 GDELT carries no source URLs, and there is no archive: a window there is **before the
+archive**, and one that begins there is **partly before the archive**.
 
 ## Standing requests
 
@@ -68,7 +88,7 @@ arriving later belong to a later reading.
 |---|---|
 | `stage/history.py` | keeps every JOMO SFO-WAM feed snapshot: those made on this computer from that repository's reflog, those made on GitHub (since 2026-11-03) from its 30-day log, `feeds/history/` — so a snapshot taken while this computer sleeps is kept when it wakes |
 | `stage/pagetime.py` | reads each article page once for the time it states: this project's user agent, robots.txt obeyed, one request per site every two seconds, a site that refuses left alone; Google News links lead to Google and are not read |
-| `stage/archive.py` | one instant per item, filed on Nsukka's days in `docs/data/days/`, with the index, the sources, their coverage and REVOTT's 401 keys |
+| `stage/archive.py` | one instant per item, filed on Nsukka's days in `docs/data/days/`, with the index, the sources, their coverage and REVOTT's 401 keys; the index also holds the GDELT tier's first and last days and the days GDELT never published |
 | `stage/standing.py` | the standing requests' records |
 | `stage/stamp.py` | the stamp, exactly: the reference for `docs/stamp.js` |
 | `stage/refresh.sh [--push]` | all of the above; commits only `docs/data` and `docs/stamps`, one rolling commit per Nsukka day |
@@ -77,15 +97,19 @@ On the reading computer, every 15 minutes:
 
     5-59/15 * * * * $HOME/revott-stamps/stage/cron.sh
 
-Local paths are read from the untracked `.paths.json` (`history`, `jomo`, `revott`). The public archive holds
+Local paths are read from the untracked `.paths.json` (`history`, `jomo`, `revott`, `gdelt`). The public archive holds
 each item's headline, link, source and times — no summaries.
 
 ## Fidelity
 
-`tests/fidelity.mjs` runs ten requests through the browser's `docs/stamp.js` and the reference
-`stage/stamp.py` — single pairs on every clock, a one-second window, a pair whose TNLDY is passed over, the
-40,501 pairs of Y 82.30 … 83.30 by 0.01 against all 401 keys, and the 401 keys against the trumpets — and
-compares the records byte for byte, SHA-256 included: 10/10 identical.
+`tests/fidelity.mjs` runs seventeen requests through the browser's `docs/stamp.js` and the reference
+`stage/stamp.py`. It compares the records byte for byte, SHA-256 included: 17/17 identical. The requests are:
+
+- single pairs on every clock, a one-second window, and a pair whose TNLDY is passed over;
+- the 40,501 pairs of Y 82.30 … 83.30 by 0.01 against all 401 keys, and the 401 keys against the trumpets;
+- in the GDELT tier, a pair on two GDELT days, a window across the first reading, windows over and around
+  days GDELT never published, and one partly before the archive;
+- Y 24.50 against all 401 keys, and the 401 keys against X −16.5721.
 
     node tests/fidelity.mjs
 

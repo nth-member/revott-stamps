@@ -112,6 +112,24 @@ def span_of(z_lo: F, z_hi: F) -> tuple[int, int]:
     return edge(z_lo, True), edge(z_hi, False)
 
 
+DAY_MS, WAT_MS = 86_400_000, 3_600_000
+
+
+def gdelt_days(a: int, b: int, idx: dict):
+    """The GDELT days a window [a, b] touches within the archive's GDELT tier (its first day until the first
+    feed reading), as Nsukka dates, and that tier's coverage of the window; None if the window misses the tier."""
+    t0, t1 = idx["archive_start"], idx["first_reading"]
+    lo, hi = max(a, t0), min(b, t1 - 1)
+    if lo > hi:
+        return None
+    d0, d1 = (lo + WAT_MS) // DAY_MS, (hi + WAT_MS) // DAY_MS
+    days = [(dt.date(1970, 1, 1) + dt.timedelta(days=d)).isoformat() for d in range(d0, d1 + 1)]
+    missing = set(idx["gdelt"]["missing"])
+    present = [d for d in days if d not in missing]
+    cov = "null" if not present else "covered" if len(present) == len(days) and t0 <= a and b < t1 else "partly"
+    return present, cov
+
+
 def coverage(src: str, a: int, b: int) -> str:
     iv = data("coverage.json").get(src, [])
     if any(c0 <= a and b <= c1 for c0, c1 in iv):
@@ -130,10 +148,10 @@ def stamp_z(z: F, eps: F, clock_name: str, domains: set[str]) -> dict:
     m = 0 if clock_name == "reconciled" else MARGIN
     lo, hi = z - h, z + h
     a, b = span_of(lo, hi)
-    status = ("before the archive" if b < idx["first_reading"] else
+    status = ("before the archive" if b < idx["archive_start"] else
               "ahead" if a > idx["as_of"] else
               "pending" if b > idx["as_of"] else
-              "partly before the archive" if a < idx["first_reading"] else "stamped")
+              "partly before the archive" if a < idx["archive_start"] else "stamped")
     base = {"z": fmt(z, 6), "instants": [ms_round(t) for t in clock.instants(z)], "window": [a, b], "status": status}
     if status in ("before the archive", "ahead"):
         return base
@@ -152,6 +170,10 @@ def stamp_z(z: F, eps: F, clock_name: str, domains: set[str]) -> dict:
     cov = {s: coverage(s, a, b) for s in chosen}
     base["items"] = [[fmt(off * 86400, 3), r[pos], r[1], r[2], r[3], r[4], r[8]] for off, r in items]
     base["coverage"] = {k: [s for s in chosen if cov[s] == k] for k in ("covered", "partly", "null")}
+    g = gdelt_days(a, b, idx)
+    if g is not None:                                     # the GDELT tier: the days themselves, at day precision
+        base["gdelt"] = g[0]
+        base["coverage"][g[1]].append("gdelt")
     return base
 
 

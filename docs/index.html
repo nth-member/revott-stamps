@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>REVOTT stamps</title>
-<meta name="description" content="Feed items stamped onto a (Y, X) of REVOTT, read from Nsukka on the Yg clock, within a variable window.">
+<meta name="description" content="Feed items stamped onto a (Y, X) of REVOTT, read from Nsukka on the Yg clock, within a variable window; before the feeds, GDELT's day sources back to 2013-04-01.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='26' fill='none' stroke='%232a78d6' stroke-width='6'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%232a78d6'/%3E%3C/svg%3E">
 <style>
 :root{
@@ -65,6 +65,8 @@ a{color:var(--accent)}
 .st.stamped{color:var(--hit);border-color:var(--hit)}
 .st.pending,.st.partly{color:var(--warn);border-color:var(--warn)}
 .st.null,.st.before{color:var(--null);border-color:var(--null)}
+details.gday{margin-top:8px}
+.gd td a{word-break:break-all}
 .how{display:inline-block;width:1.6em;text-align:center;border-radius:5px;border:1px solid var(--line);font-size:11px}
 .reading{color:var(--ink-2)}
 details summary{cursor:pointer;color:var(--ink-2)}
@@ -77,6 +79,7 @@ details summary{cursor:pointer;color:var(--ink-2)}
 <h1>REVOTT STAMPS</h1>
 <p class="sub">Feed items stamped onto a (Y, X) of REVOTT. A pair reads TNLDY Z = 14160 + 100·(Y + X); an item is
 stamped onto it when its own instant, read from Nsukka on the Yg clock, lies within the variac's window of that Z.
+Before the feeds began, back to 2013-04-01, the window is filled at day precision with GDELT's day sources.
 Vary Y, vary X, or both: every pair in the request is stamped.</p>
 <div class="card clockline mono" id="clock">—</div>
 
@@ -149,9 +152,13 @@ Vary Y, vary X, or both: every pair in the request is stamped.</p>
   remains its own reading. A stamp records what fell in the window, nothing more.</p>
   <p><b>NULL is never zero.</b> The feeds are read every 15 minutes while the reading computer runs; each source counts as
   covered for a window only if a reading of it reached back across the whole window. Before the first reading
-  (<span id="firstr"></span>) there is no archive.</p>
+  (<span id="firstr"></span>) the archive is GDELT's day sources, from <span id="gfirst"></span> 00:00 Nsukka, at day
+  precision; a day GDELT never published is NULL. Before that there is no archive.</p>
   <p><b>Sources.</b> The JOMO SFO-WAM knowledge-server feeds (<a href="https://3pp-noah.github.io/jomo-sfo-wam/">3pp-noah/jomo-sfo-wam</a>);
-  each article's own page is read once for the time it states, obeying robots.txt. Publishers that refuse keep their feed time.</p>
+  each article's own page is read once for the time it states, obeying robots.txt. Publishers that refuse keep their feed time.
+  Before the feeds, GDELT's day sources (<a href="https://nth-member.github.io/gdelt/">nth-member/gdelt</a>): each day's 250
+  most-cited source URLs by GDELT's article counts, one per domain and per path, the day being the one GDELT ingested its
+  archive, laid on Nsukka's calendar day as REVOTT reads it. They are one list per day, whatever feeds are chosen.</p>
   <p>Part of <a href="https://3pp-noah.github.io/">3PP-NOAH</a> · <a href="https://nth-member.github.io/revott/">REVOTT</a> ·
   <a href="https://nth-member.github.io/member/">the nth member</a></p>
 </div>
@@ -287,21 +294,22 @@ $("#go").onclick = go;
 
 function show(rec) {
   const zs = Object.keys(rec.stamps), at = pairsAt(rec), c = {};
-  let items = 0, over = 0;
-  for (const z of zs) { const s = rec.stamps[z]; c[s.status] = (c[s.status] || 0) + 1; items += s.items ? s.items.length : 0; if (!s.instants.length) over++; }
+  let items = 0, over = 0; const gdays = new Set();
+  for (const z of zs) { const s = rec.stamps[z]; c[s.status] = (c[s.status] || 0) + 1; items += s.items ? s.items.length : 0; if (!s.instants.length) over++; (s.gdelt || []).forEach(d => gdays.add(d)); }
   let h = '<div class="card"><h2>' + rec.pairs.length.toLocaleString() + (rec.pairs.length === 1 ? " pair" : " pairs") + " · " + zs.length.toLocaleString() + " TNLDY</h2>"
-    + '<div class="tiles">' + [["stamped", c["stamped"] || 0], ["items stamped", items], ["pending", (c["pending"] || 0) + (c["partly before the archive"] || 0)],
-      ["ahead", c["ahead"] || 0], ["before the archive", c["before the archive"] || 0], ["passed over", over]]
+    + '<div class="tiles">' + [["stamped", c["stamped"] || 0], ["items stamped", items], ["GDELT days", gdays.size], ["pending", c["pending"] || 0],
+      ["ahead", c["ahead"] || 0], ["before the archive", c["before the archive"] || 0], ["partly before the archive", c["partly before the archive"] || 0], ["passed over", over]]
+      .filter(([k, v]) => v || k !== "partly before the archive")
       .map(([k, v]) => '<div class="tile"><div class="k">' + k + '</div><div class="v mono">' + v.toLocaleString() + "</div></div>").join("") + "</div>"
     + '<p class="note mono">record ' + rec.id.slice(0, 16) + " · archive as of " + when(rec.as_of) + ' Nsukka · <a href="#" id="dl">download the record (JSON)</a></p>';
   if (zs.length > 1) {
     const rows = zs.filter(z => rec.stamps[z].status !== "ahead" && rec.stamps[z].status !== "before the archive");
     h += '<p class="note">' + (rows.length ? "The TNLDY that the archive reaches; choose one to see its stamp." : "No pair of this request falls within the archive yet.") + "</p>";
-    if (rows.length) h += '<div class="tbl" style="max-height:420px"><table><tr><th class="num">TNLDY</th><th>pairs (Y, X)</th><th>Nsukka</th><th>status</th><th class="num">items</th></tr>'
+    if (rows.length) h += '<div class="tbl" style="max-height:420px"><table><tr><th class="num">TNLDY</th><th>pairs (Y, X)</th><th>Nsukka</th><th>status</th><th class="num">items</th><th class="num">GDELT days</th></tr>'
       + rows.slice(0, 1500).map(z => { const s = rec.stamps[z], p = at.get(z);
         return '<tr class="pick" data-z="' + z + '"><td class="num mono">' + trim(z) + '</td><td class="mono">' + p.slice(0, 3).map(([y, x]) => "(" + trim(y) + ", " + trim(x) + ")").join(" ")
           + (p.length > 3 ? " +" + (p.length - 3) : "") + '</td><td class="mono">' + (s.instants.length ? s.instants.map(when).join(" and ") : "passed over") + "</td><td>" + badge(s.status)
-          + '</td><td class="num mono">' + (s.items ? s.items.length : "—") + "</td></tr>"; }).join("") + "</table></div>";
+          + '</td><td class="num mono">' + (s.items ? s.items.length : "—") + '</td><td class="num mono">' + (s.gdelt ? s.gdelt.length : "—") + "</td></tr>"; }).join("") + "</table></div>";
     const ahead = zs.filter(z => rec.stamps[z].status === "ahead").slice(0, 8);
     if (ahead.length) h += '<p class="note">Next ahead: ' + ahead.map(z => { const s = rec.stamps[z]; return '<span class="mono">' + trim(z) + "</span> " + (s.instants.length ? when(s.instants[0]) : "passed over"); }).join(" · ") + "</p>";
   }
@@ -320,20 +328,58 @@ function one(rec, z) {
   if (kx) h += '<p class="reading">«' + esc(kx[1]) + "»" + (ky ? " is being «" + esc(ky[1]) + "»" : "") + "</p>";
   h += '<div class="tiles">' + [["TNLDY", trim(z)], ["Nsukka", s.instants.length ? s.instants.map(when).join(" and ") : "passed over"],
     ["window", when(s.window[0]).slice(5) + " → " + when(s.window[1]).slice(5)], ["status", s.status], ["items", s.items ? s.items.length : "—"]]
+    .concat(s.gdelt ? [["GDELT days", s.gdelt.length]] : [])
     .map(([k, v]) => '<div class="tile"><div class="k">' + k + '</div><div class="v mono" style="font-size:14px">' + esc(v) + "</div></div>").join("") + "</div>";
+  const fc = k => s.coverage ? s.coverage[k].filter(id => id !== "gdelt") : [];
   if (s.coverage) {
     const name = id => esc(SRC[id] ? SRC[id][0] : id);
-    h += '<p class="note">Feeds across the window: <b>' + s.coverage.covered.length + "</b> covered · <b>" + s.coverage.partly.length + "</b> partly · <b>" + s.coverage.null.length + "</b> NULL (not being read: no item from them is not a zero)</p>";
-    if (s.coverage.null.length || s.coverage.partly.length) h += "<details><summary>which</summary><p class=\"note\">NULL: " + s.coverage.null.map(name).join(", ") + (s.coverage.partly.length ? "<br>partly: " + s.coverage.partly.map(name).join(", ") : "") + "</p></details>";
+    h += '<p class="note">Feeds across the window: <b>' + fc("covered").length + "</b> covered · <b>" + fc("partly").length + "</b> partly · <b>" + fc("null").length + "</b> NULL (not being read: no item from them is not a zero)</p>";
+    if (fc("null").length || fc("partly").length) h += "<details><summary>which</summary><p class=\"note\">NULL: " + fc("null").map(name).join(", ") + (fc("partly").length ? "<br>partly: " + fc("partly").map(name).join(", ") : "") + "</p></details>";
   }
   if (s.items && s.items.length) {
     h += '<div class="tbl" style="margin-top:10px"><table><tr><th class="num">offset</th><th>Nsukka</th><th>source</th><th>headline</th><th>clock</th></tr>'
       + s.items.map(([off, ms, how, src, title, url, note]) => '<tr><td class="num mono">' + (off.startsWith("-") ? "−" : "+") + offTxt(Number(off)) + '</td><td class="mono">' + when(ms).slice(11)
         + '</td><td>' + esc(SRC[src] ? SRC[src][0] : src) + '</td><td><a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(title) + '</a></td><td><span class="how" title="' + esc(HOW[how] + (note ? " — " + note : "")) + '">' + how + "</span></td></tr>").join("")
       + "</table></div>";
-  } else if (s.items) h += '<p class="note">Nothing fell in this window from the chosen feeds.</p>';
+  } else if (s.items) h += '<p class="note">' + (fc("covered").length + fc("partly").length ? "Nothing fell in this window from the chosen feeds."
+    : "The chosen feeds were not yet being read across this window: NULL, not zero.") + "</p>";
+  if (s.gdelt) h += gdeltPart(s);
   $("#one").innerHTML = h + "</div>";
+  document.querySelectorAll("#one details.gday").forEach(d => { d.ontoggle = () => d.open && gdeltDay(d); if (d.open) gdeltDay(d); });
   $("#one").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+/* ---- the GDELT tier: GDELT's day sources (nth-member/gdelt), at day precision, until the first feed reading ---- */
+const dayNo = t => Math.floor((t + 3600000) / 86400000), dayOf = n => new Date(n * 86400000).toISOString().slice(0, 10);
+function gdeltPart(s) {
+  const lo = Math.max(s.window[0], IDX.archive_start), hi = Math.min(s.window[1], IDX.first_reading - 1), touched = [];
+  for (let n = dayNo(lo); n <= dayNo(hi); n++) touched.push(dayOf(n));
+  const missing = touched.filter(d => !s.gdelt.includes(d)), g = ["covered", "partly", "null"].find(k => s.coverage[k].includes("gdelt"));
+  const why = g === "covered" ? "the whole window lies before the feeds, on days GDELT published"
+    : g === "null" ? "GDELT published none of these days: NULL, not zero"
+    : [s.window[0] < IDX.archive_start ? "the window begins before " + IDX.gdelt.first : "", s.window[1] >= IDX.first_reading ? "it runs on past the first feed reading" : "",
+       missing.length ? "GDELT never published " + missing.join(", ") : ""].filter(Boolean).join("; ");
+  let h = '<h2 style="margin-top:18px">GDELT\'s day sources</h2><p class="note">Before the feeds the window is read at day precision. It touches '
+    + (touched.length === 1 ? "one Nsukka day" : touched.length + " Nsukka days") + " before the first reading"
+    + (missing.length ? ", and GDELT published " + s.gdelt.length + " of them" : "") + "; for each" + (missing.length ? " of those" : "") + ", GDELT's 250 most-cited sources of that day"
+    + " — the day's sources, not items timed within the window. GDELT's tier is <b>" + (g === "null" ? "NULL" : g) + "</b> across the window: " + esc(why) + ".</p>";
+  h += s.gdelt.map((d, i) => '<details class="gday" data-day="' + d + '"' + (s.gdelt.length <= 2 && i < 2 ? " open" : "") + '><summary class="mono">' + d
+    + '</summary><div class="gd note">loading…</div></details>').join("");
+  return h;
+}
+async function gdeltDay(el) {
+  if (el.dataset.done) return;
+  el.dataset.done = "1";
+  const d = el.dataset.day, box = el.querySelector(".gd");
+  try {
+    const r = await fetch(IDX.gdelt.days + d + ".json"); if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json(), safe = u => /^https?:\/\//i.test(u) ? u : "#";
+    box.innerHTML = '<p class="note mono">' + j.rows.toLocaleString() + " event records · " + j.distinct_urls.toLocaleString() + " distinct source URLs · the top "
+      + j.top.length + ' · <a href="' + esc(IDX.gdelt.page + d) + '" target="_blank" rel="noopener">the day in GDELT ↗</a></p>'
+      + '<div class="tbl" style="max-height:360px"><table><tr><th class="num">articles</th><th>source</th></tr>'
+      + j.top.map(t => '<tr><td class="num mono">' + t.n.toLocaleString() + '</td><td><a href="' + esc(safe(t.u)) + '" target="_blank" rel="noopener noreferrer">'
+        + esc(t.u.replace(/^https?:\/\/(www\.)?/i, "")) + "</a></td></tr>").join("") + "</table></div>";
+  } catch (e) { el.dataset.done = ""; box.textContent = "GDELT's day " + d + " could not be loaded (" + e.message + ")."; }
 }
 
 /* ---- standing requests (stage/standing.py) ---- */
@@ -353,7 +399,7 @@ async function standing() {
   KEYMAP = new Map(KEYS.map(k => [k[0], k]));
   $("#ykeys").textContent = "the " + KEYS.length + " keys"; $("#xkeys").textContent = "all " + KEYS.length + " keys";
   $("#keys").innerHTML = KEYS.map(k => '<option value="' + k[0] + '">' + esc(k[1].slice(0, 80)) + "</option>").join("");
-  $("#firstr").textContent = when(IDX.first_reading) + " Nsukka";
+  $("#firstr").textContent = when(IDX.first_reading) + " Nsukka"; $("#gfirst").textContent = IDX.gdelt.first;
   tick(); domChips();
   let r = null;
   try { if (location.hash.length > 1) r = JSON.parse(decodeURIComponent(location.hash.slice(1))); } catch { r = null; }
