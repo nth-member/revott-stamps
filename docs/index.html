@@ -108,7 +108,7 @@ Vary Y, vary X, or both: every pair in the request is stamped.</p>
     <div>
       <label for="umy">unit of Y, Uy (days)</label>
       <select id="umy" style="width:100%">
-        <option value="100">100 D — REVOTT</option>
+        <option value="100">100 D</option>
         <option value="360">360 D — yJ</option>
         <option value="17640/48.3">17640/48.3 D — yG</option>
         <option value="other">another value</option>
@@ -119,7 +119,7 @@ Vary Y, vary X, or both: every pair in the request is stamped.</p>
     <div>
       <label for="umx">unit of X, Ux (days)</label>
       <select id="umx" style="width:100%">
-        <option value="100">100 D — REVOTT</option>
+        <option value="100">100 D</option>
         <option value="360">360 D — yJ</option>
         <option value="17640/48.3">17640/48.3 D — yG</option>
         <option value="other">another value</option>
@@ -278,7 +278,7 @@ $("#eps").oninput = () => { const e = Number($("#eps").value); if (e > 0) $("#va
 
 /* ---- GLOBAL: Z = Ztp + Uy·Y + Ux·X. The STAMP tab stamps with REVOTT's setting (Ztp 14160, Uy = Ux = 100 days);
    the GLOBAL tab with the turning point and the two units set on it. ---- */
-const UNAMES = { "100": "100 D (REVOTT)", "360": "360 D (yJ)", "17640/48.3": "17640/48.3 D (yG)" };
+const UNAMES = { "100": "100 D", "360": "360 D (yJ)", "17640/48.3": "17640/48.3 D (yG)" };
 let MODE = "stamp", U_D = 100;                            // the tab, and Ux in force in days: ε is counted in X units
 const XSEC = () => U_D * 86400;                           // seconds in one X
 const uStr = a => $("#um" + a).value === "other" ? $("#uc" + a).value.trim() : $("#um" + a).value;     // a: "y" or "x"
