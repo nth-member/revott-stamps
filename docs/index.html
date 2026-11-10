@@ -67,6 +67,11 @@ a{color:var(--accent)}
 .st.null,.st.before{color:var(--null);border-color:var(--null)}
 details.gday{margin-top:8px}
 .gd td a{word-break:break-all}
+.tabs{display:flex;gap:6px;margin:14px 0 -6px}
+.tab{background:var(--plane);border:1px solid var(--axis);border-radius:8px 8px 0 0;padding:7px 16px;cursor:pointer;font-weight:600;letter-spacing:.06em;font-size:13px}
+.tab[aria-selected="true"]{background:var(--surface);border-color:var(--ink);color:var(--ink)}
+.tab .dot{color:var(--warn)}
+.gact{color:var(--warn)}
 .how{display:inline-block;width:1.6em;text-align:center;border-radius:5px;border:1px solid var(--line);font-size:11px}
 .reading{color:var(--ink-2)}
 details summary{cursor:pointer;color:var(--ink-2)}
@@ -77,13 +82,46 @@ details summary{cursor:pointer;color:var(--ink-2)}
 <body>
 <div class="wrap">
 <h1>REVOTT STAMPS</h1>
-<p class="sub">Feed items stamped onto a (Y, X) of REVOTT. A pair reads TNLDY Z = 14160 + 100·(Y + X); an item is
+<p class="sub">Feed items stamped onto a (Y, X) of REVOTT. A pair reads TNLDY Z = <span id="zf" class="mono">14160 + 100·(Y + X)</span>; an item is
 stamped onto it when its own instant, read from Nsukka on the Yg clock, lies within the variac's window of that Z.
 Before the feeds began, back to 2013-04-01, the window is filled at day precision with GDELT's day sources.
 Vary Y, vary X, or both: every pair in the request is stamped.</p>
 <div class="card clockline mono" id="clock">—</div>
 
-<div class="card">
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" id="tab-stamp" aria-selected="true" aria-controls="p-stamp">STAMP</button>
+  <button class="tab" role="tab" id="tab-global" aria-selected="false" aria-controls="p-global">GLOBAL<span class="dot" id="gdot" hidden> ●</span></button>
+</div>
+
+<div class="card" id="p-global" role="tabpanel" hidden>
+  <h2>GLOBAL — where a pair falls in time</h2>
+  <p class="note">Every pair reads Z = Ztp + U·(Y + X). REVOTT's own setting is Ztp = 14160.0 and U = 100 days; change either
+    and every stamp follows it. Y, X and the keys themselves are never altered: Ztp and U only place them in time.</p>
+  <div class="grid" style="margin-top:12px">
+    <div>
+      <label for="ztp">Z turning point, Ztp (TNLDY)</label>
+      <input id="ztp" class="mono" value="14160.0" inputmode="decimal" style="width:100%">
+      <p class="note mono" id="ztpnote"></p>
+    </div>
+    <div>
+      <label for="um">unit of Y and X, U (days)</label>
+      <select id="um" style="width:100%">
+        <option value="100">100 D — REVOTT</option>
+        <option value="360">360 D — yJ</option>
+        <option value="17640/48.3">17640/48.3 D — yG</option>
+        <option value="other">another value</option>
+      </select>
+      <input id="uc" class="mono" value="365.25" inputmode="decimal" aria-label="U in days: a decimal or a ratio, as 17640/48.3" style="width:100%;margin-top:6px" hidden>
+      <p class="note mono" id="unote"></p>
+    </div>
+  </div>
+  <p class="mono" id="gform" style="margin:14px 0 4px"></p>
+  <p class="note" id="gpair"></p>
+  <p class="note"><a href="#" id="greset">REVOTT's setting</a> (Ztp 14160.0, U 100 D). The variac keeps its window in time
+    when U changes; ε, counted in X units, follows U.</p>
+</div>
+
+<div class="card" id="p-stamp" role="tabpanel">
   <div class="grid">
     <div>
       <label for="ym">Y</label>
@@ -137,6 +175,7 @@ Vary Y, vary X, or both: every pair in the request is stamped.</p>
     <button class="go" id="go" style="flex:0 0 auto">STAMP</button>
     <span class="note" id="prog" style="flex:1 1 200px"></span>
   </div>
+  <p class="note gact" id="gact" hidden></p>
 </div>
 
 <div id="out"></div>
@@ -147,8 +186,9 @@ Vary Y, vary X, or both: every pair in the request is stamped.</p>
   <p><b>The clock.</b> TNLDY is read from Nsukka (WAT, UTC+01:00) on the engine's own year, Yg = 17640/48.3 days, laid on
   Nsukka's calendar from 1 December 00:00 and recalibrated at every Yg year (<a href="nsukka-yg-clock.js">nsukka-yg-clock.js</a>).
   A TNLDY passed over at a recalibration has no instant and holds no item; one met twice holds the items of both instants.</p>
-  <p><b>The stamp.</b> |Z(item) − Z(pair)| ≤ 100·ε, compared exactly. The variac ε is in X units: 0.01 X is one day,
-  0.0001 X the last digit of a key (14.4 minutes). Pairs on one level line Y + X = constant share their items; each pair
+  <p><b>The stamp.</b> A pair reads Z = Ztp + U·(Y + X), and |Z(item) − Z(pair)| ≤ U·ε, compared exactly. REVOTT's own
+  Ztp is 14160.0 and U 100 days; GLOBAL sets others, leaving Y, X and the keys as they are. The variac ε is in X units:
+  at U = 100 days, 0.01 X is one day and 0.0001 X, the last digit of a key, 14.4 minutes. Pairs on one level line Y + X = constant share their items; each pair
   remains its own reading. A stamp records what fell in the window, nothing more.</p>
   <p><b>NULL is never zero.</b> The feeds are read every 15 minutes while the reading computer runs; each source counts as
   covered for a window only if a reading of it reached back across the whole window. Before the first reading
@@ -192,7 +232,7 @@ const SEC_LO = 1, SEC_HI = 432000;
 const posToSec = p => SEC_LO * Math.pow(SEC_HI / SEC_LO, p / 1000);
 const secToPos = s => Math.round(1000 * Math.log(s / SEC_LO) / Math.log(SEC_HI / SEC_LO));
 function sig3(x) { return Number(x.toPrecision(3)).toString(); }
-function epsStr(sec) { const e = sec / 8640000; return e >= 1e-6 ? sig3(e) : e.toExponential(2).replace(/e/, "e"); }
+function epsStr(sec) { const e = sec / XSEC(); return e >= 1e-6 ? sig3(e) : e.toExponential(2).replace(/e/, "e"); }
 function offTxt(sec) {
   const a = Math.abs(sec), p = v => String(v).padStart(2, "0");
   return a < 60 ? a.toFixed(0) + " s" : a < 3600 ? Math.floor(a / 60) + " min " + p(Math.round(a % 60)) + " s"
@@ -205,18 +245,66 @@ function human(sec) {
 function readVariac() {
   const e = Number($("#eps").value);
   if (!(e > 0)) { $("#vread").textContent = "ε must be a positive number of X units"; return; }
-  const sec = e * 8640000;
-  $("#vread").textContent = "±" + human(sec) + " · ε = " + $("#eps").value + " X · ±" + (100 * e).toPrecision(3) + " TNLDY";
+  const sec = e * XSEC();
+  $("#vread").textContent = "±" + human(sec) + " · ε = " + $("#eps").value + " X · ±" + (U_D * e).toPrecision(3) + " TNLDY";
   // for one key: where the window meets the neighbouring keys
   const x = $("#xm").value === "key" ? Number($("#xk").value) : null, i = x == null ? -1 : KEYS.findIndex(k => k[0] === x);
   if (i >= 0) {
     const g = Math.min(i > 0 ? x - KEYS[i - 1][0] : Infinity, i < KEYS.length - 1 ? KEYS[i + 1][0] - x : Infinity);
     $("#vnote").textContent = "Windows of this key and its nearer neighbour (" + sig3(g) + " X away) meet at ε = " + sig3(g / 2) +
-      " X (±" + human(g / 2 * 8640000) + ")" + (e > g / 2 ? "; this window reaches past it." : ".");
+      " X (±" + human(g / 2 * XSEC()) + ")" + (e > g / 2 ? "; this window reaches past it." : ".");
   } else $("#vnote").textContent = "With Y stepped by δ, ε = δ/2 tiles time: each item falls in exactly one window.";
 }
 $("#var").oninput = () => { $("#eps").value = epsStr(posToSec(+$("#var").value)); readVariac(); };
-$("#eps").oninput = () => { const e = Number($("#eps").value); if (e > 0) $("#var").value = secToPos(e * 8640000); readVariac(); };
+$("#eps").oninput = () => { const e = Number($("#eps").value); if (e > 0) $("#var").value = secToPos(e * XSEC()); readVariac(); };
+
+/* ---- GLOBAL: Z = Ztp + U·(Y + X); REVOTT's Ztp 14160.0 and U 100 days unless set here ---- */
+const UNAMES = { "100": "100 D (REVOTT)", "360": "360 D (yJ)", "17640/48.3": "17640/48.3 D (yG)" };
+let U_D = 100;                                            // U in days, as a number, for the variac and the checks
+const XSEC = () => U_D * 86400;                           // seconds in one X
+const unitStr = () => $("#um").value === "other" ? $("#uc").value.trim() : $("#um").value;
+const ztpStr = () => $("#ztp").value.trim();
+function unitNum(str) {
+  if (!/^\d+(\.\d+)?(\s*\/\s*\d+(\.\d+)?)?$/.test(str)) return NaN;
+  const [a, b] = str.split("/").map(Number); return b === undefined ? a : a / b;
+}
+const isDefault = () => Number(ztpStr()) === 14160 && unitNum(unitStr()) === 100;
+function setGlobal(keepWindow = true) {
+  const sec = keepWindow ? Number($("#eps").value) * XSEC() : null, before = U_D;
+  const u = unitNum(unitStr());
+  $("#uc").hidden = $("#um").value !== "other";
+  const ok = u > 0 && /^-?\d+(\.\d+)?$/.test(ztpStr());
+  if (u > 0) U_D = u;
+  const uname = UNAMES[unitStr()] || unitStr() + " D";
+  $("#unote").textContent = u > 0 ? "1 X = " + human(u * 86400) + "; 0.0001 X = " + human(u * 8.64) : "U must be a positive decimal, or a ratio as 17640/48.3";
+  const z0 = Number(ztpStr()), at = /^-?\d+(\.\d+)?$/.test(ztpStr()) && Math.abs(z0) < 2.9e6 ? Yg.instantsOf(ztpStr()) : [];
+  $("#ztpnote").textContent = !/^-?\d+(\.\d+)?$/.test(ztpStr()) ? "Ztp must be a plain decimal" : at.length ? "TNLDY " + z0 + " = " + at.map(when).join(" and ") + " Nsukka" : "TNLDY " + z0 + " is passed over at a recalibration";
+  const form = ztpStr() + " + " + unitStr() + "·(Y + X)";
+  $("#zf").textContent = form;
+  $("#gform").textContent = "Z = " + form + (isDefault() ? "   — REVOTT's setting" : "");
+  const dflt = !ok || isDefault();
+  $("#gdot").hidden = dflt; $("#gact").hidden = dflt;
+  $("#gact").textContent = "GLOBAL is set: Z = Ztp + U·(Y + X) with Ztp " + ztpStr() + " and U " + uname + ". Y, X and the keys are unaltered.";
+  if (sec && U_D !== before && Number($("#eps").value) > 0) { $("#eps").value = epsStr(sec); $("#var").value = secToPos(sec); }
+  globalPair(); readVariac();
+}
+function globalPair() {
+  if ($("#ym").value !== "value" || $("#xm").value !== "key") { $("#gpair").textContent = "With one Y and one key chosen under STAMP, their TNLDY is shown here."; return; }
+  const y = Number($("#yv").value), x = Number($("#xk").value), z = Number(ztpStr()) + U_D * (y + x);
+  if (!isFinite(z)) { $("#gpair").textContent = ""; return; }
+  const zs = z.toFixed(6), at = Math.abs(z) < 2.9e6 ? Yg.instantsOf(zs) : [];
+  $("#gpair").textContent = "Under STAMP: Y " + $("#yv").value + ", X " + $("#xk").value + " → Z = " + trim(zs) + (at.length ? " = " + at.map(when).join(" and ") + " Nsukka" : " (no instant)") + ".";
+}
+["#ztp", "#uc"].forEach(id => $(id).addEventListener("input", () => setGlobal()));
+$("#um").addEventListener("change", () => setGlobal());
+$("#greset").onclick = e => { e.preventDefault(); $("#ztp").value = "14160.0"; $("#um").value = "100"; setGlobal(); };
+function showTab(t) {
+  const g = t === "global";
+  $("#tab-global").setAttribute("aria-selected", g); $("#tab-stamp").setAttribute("aria-selected", !g);
+  $("#p-global").hidden = !g; $("#p-stamp").hidden = g;
+  if (g) globalPair();
+}
+$("#tab-stamp").onclick = () => showTab("stamp"); $("#tab-global").onclick = () => showTab("global");
 
 /* ---- the form ---- */
 function showModes() {
@@ -249,7 +337,10 @@ function request() {
     ? { mode: "range", from: $("#yf").value.trim(), to: $("#yt").value.trim(), step: $("#ys").value.trim() } : { mode: "keys" };
   const x = xm === "key" ? { mode: "key", x: $("#xk").value.trim() } : xm === "range" ? { mode: "range", from: $("#xf").value.trim(), to: $("#xt").value.trim() }
     : xm === "layer" ? { mode: "layer", layer: $("#xl").value, hidden: $("#xh").value } : { mode: "all" };
-  return { y, x, eps: $("#eps").value.trim(), clock: $("#clk").value, domains: [...doms].sort() };
+  const r = { y, x, eps: $("#eps").value.trim(), clock: $("#clk").value, domains: [...doms].sort() };
+  if (Number(ztpStr()) !== 14160 || !/^-?\d+(\.\d+)?$/.test(ztpStr())) r.ztp = ztpStr();      // REVOTT's setting is left out of the request
+  if (unitNum(unitStr()) !== 100) r.unit = unitStr();
+  return r;
 }
 function fill(r) {
   $("#ym").value = r.y.mode; $("#xm").value = r.x.mode;
@@ -258,7 +349,11 @@ function fill(r) {
   if (r.x.mode === "key") $("#xk").value = r.x.x;
   if (r.x.mode === "range") { $("#xf").value = r.x.from; $("#xt").value = r.x.to; }
   if (r.x.mode === "layer") { $("#xl").value = r.x.layer; $("#xh").value = r.x.hidden || "both"; }
-  $("#eps").value = r.eps; $("#var").value = secToPos(Number(r.eps) * 8640000); $("#clk").value = r.clock || "reconciled";
+  $("#ztp").value = r.ztp || "14160.0";
+  const un = r.unit ? r.unit.replace(/\s+/g, "") : "100";
+  if (UNAMES[un]) $("#um").value = un; else { $("#um").value = "other"; $("#uc").value = un; }
+  setGlobal(false);
+  $("#eps").value = r.eps; $("#var").value = secToPos(Number(r.eps) * XSEC()); $("#clk").value = r.clock || "reconciled";
   doms = new Set(r.domains); domChips(); showModes();
 }
 function check(r) {
@@ -267,6 +362,15 @@ function check(r) {
   if (r.y.mode === "range" && !(Number(r.y.step) > 0)) return "The Y step must be positive.";
   if (r.y.mode === "range" && (Number(r.y.to) - Number(r.y.from)) / Number(r.y.step) > 36000) return "That Y range has more than 36 000 steps; widen the step.";
   if (!(Number(r.eps) > 0)) return "ε must be positive.";
+  if (r.ztp !== undefined && !num.test(r.ztp)) return "GLOBAL: Ztp must be a plain decimal, as 14160.0.";
+  if (r.unit !== undefined && !(unitNum(r.unit) > 0)) return "GLOBAL: U must be a positive number of days, or a ratio as 17640/48.3.";
+  { // every pair must fall within the years 1 to 9999
+    const kx = KEYS.map(k => k[0]), lo = Math.min(...kx), hi = Math.max(...kx);
+    const ys = r.y.mode === "value" ? [+r.y.value] : r.y.mode === "range" ? [+r.y.from, +r.y.to] : [lo, hi];
+    const xs = r.x.mode === "key" ? [+r.x.x] : r.x.mode === "range" ? [+r.x.from, +r.x.to] : [lo, hi];
+    const zt = r.ztp !== undefined ? +r.ztp : 14160, u = r.unit !== undefined ? unitNum(r.unit) : 100;
+    for (const yv of ys) for (const xv of xs) { const z = zt + u * (yv + xv); if (!(z > -700000 && z < 2900000)) return "With this Ztp and U, a pair reads TNLDY " + Math.round(z) + ", outside the years 1 to 9999."; }
+  }
   if (!r.domains.length) return "Choose at least one feed.";
   return null;
 }
@@ -301,7 +405,8 @@ function show(rec) {
       ["ahead", c["ahead"] || 0], ["before the archive", c["before the archive"] || 0], ["partly before the archive", c["partly before the archive"] || 0], ["passed over", over]]
       .filter(([k, v]) => v || k !== "partly before the archive")
       .map(([k, v]) => '<div class="tile"><div class="k">' + k + '</div><div class="v mono">' + v.toLocaleString() + "</div></div>").join("") + "</div>"
-    + '<p class="note mono">record ' + rec.id.slice(0, 16) + " · archive as of " + when(rec.as_of) + ' Nsukka · <a href="#" id="dl">download the record (JSON)</a></p>';
+    + '<p class="note mono">record ' + rec.id.slice(0, 16) + " · archive as of " + when(rec.as_of) + ' Nsukka · <a href="#" id="dl">download the record (JSON)</a></p>'
+    + (rec.request.ztp !== undefined || rec.request.unit !== undefined ? '<p class="note gact">GLOBAL: Z = ' + esc(rec.request.ztp ?? "14160.0") + " + " + esc(rec.request.unit ?? "100") + "·(Y + X)</p>" : "");
   if (zs.length > 1) {
     const rows = zs.filter(z => rec.stamps[z].status !== "ahead" && rec.stamps[z].status !== "before the archive");
     h += '<p class="note">' + (rows.length ? "The TNLDY that the archive reaches; choose one to see its stamp." : "No pair of this request falls within the archive yet.") + "</p>";
@@ -403,7 +508,7 @@ async function standing() {
   tick(); domChips();
   let r = null;
   try { if (location.hash.length > 1) r = JSON.parse(decodeURIComponent(location.hash.slice(1))); } catch { r = null; }
-  if (r) { fill(r); go(); } else { $("#eps").value = "0.00005"; $("#var").value = secToPos(432); showModes(); }
+  if (r) { fill(r); go(); } else { setGlobal(false); $("#eps").value = "0.00005"; $("#var").value = secToPos(432); showModes(); }
   standing();
 })();
 </script>

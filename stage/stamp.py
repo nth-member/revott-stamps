@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """Stamps, exactly: the reference that docs/stamp.js must reproduce (tests/fidelity.mjs).
 
-A pair (Y, X) reads TNLDY Z = 14160 + 100·(Y + X). The variac ε, in X units, is a window of ±100·ε
-TNLDY about it. An item is stamped onto the pair when its own TNLDY -- its instant on the chosen clock,
+A pair (Y, X) reads TNLDY Z = Ztp + U·(Y + X): REVOTT's turning point Ztp = 14160 and unit U = 100 days
+unless the request sets others ("ztp", a decimal; "unit", in days, a decimal or a ratio such as 17640/48.3).
+The variac ε, in X units, is a window of ±U·ε TNLDY about it. An item is stamped onto the pair when its own TNLDY -- its instant on the chosen clock,
 read on the Nsukka/Yg clock -- lies in that window:
 
-    |Z(item) − Z(pair)| ≤ 100·ε
+    |Z(item) − Z(pair)| ≤ U·ε
 
 Everything is compared in TNLDY, so a window that meets a Yg recalibration is handled by the clock
 itself: TNLDY passed over holds no item, TNLDY met twice holds the items of both instants.
 
 A request names Y (a value, a range with a step, or REVOTT's keys) and X (keys: one, a range, a layer,
-or all of them); every pair is stamped, once per distinct Z, since only Y + X sets the TNLDY.
+or all of them); every pair is stamped, once per distinct Z, since only Y + X sets the TNLDY. Y, X and
+the keys are never altered: Ztp and U only place them in time.
 """
 from __future__ import annotations
 
@@ -36,6 +38,23 @@ SLACK = 1e-6        # the day index rounds its TNLDY ranges to 6 decimals
 
 def dec(v) -> F:
     return F(Decimal(str(v)))
+
+
+ZTP, UNIT = F(14160), F(100)          # REVOTT's turning point and unit, in days
+
+
+def unit_of(v) -> F:
+    """A unit in days: a decimal, or a ratio of two, as 17640/48.3."""
+    s = str(v).strip()
+    u = dec(s.split("/")[0].strip()) / dec(s.split("/")[1].strip()) if "/" in s else dec(s)
+    if u <= 0:
+        raise ValueError("the unit must be positive")
+    return u
+
+
+def zmap(request: dict) -> tuple[F, F]:
+    """(Ztp, U) of a request: REVOTT's 14160 and 100 days unless it sets its own."""
+    return (dec(request["ztp"]) if "ztp" in request else ZTP), (unit_of(request["unit"]) if "unit" in request else UNIT)
 
 
 def fmt(v: F, places: int = 6) -> str:
@@ -139,9 +158,9 @@ def coverage(src: str, a: int, b: int) -> str:
     return "null"
 
 
-def stamp_z(z: F, eps: F, clock_name: str, domains: set[str]) -> dict:
+def stamp_z(z: F, eps: F, clock_name: str, domains: set[str], unit: F = UNIT) -> dict:
     """Everything stamped onto one TNLDY."""
-    h = 100 * eps
+    h = unit * eps
     idx = data("index.json")
     srcs = data("sources.json")
     pos = CLOCKS[clock_name]
@@ -185,11 +204,12 @@ def stamp(request: dict) -> dict:
     """A request -> its stamps: {request, as_of, pairs: [[y, x, z]], stamps: {z: stamp}, id}."""
     eps = dec(request["eps"])
     domains = set(request["domains"])
-    pairs = [(y, x, F(14160) + 100 * (y + x)) for y in ys_of(request["y"]) for x in xs_of(request["x"])]
+    ztp, unit = zmap(request)
+    pairs = [(y, x, ztp + unit * (y + x)) for y in ys_of(request["y"]) for x in xs_of(request["x"])]
     stamps = {}
     for z in sorted(set(p[2] for p in pairs)):          # one stamp per TNLDY to 6 decimals, the first of any tie
         if fmt(z, 6) not in stamps:
-            stamps[fmt(z, 6)] = stamp_z(z, eps, request.get("clock", "reconciled"), domains)
+            stamps[fmt(z, 6)] = stamp_z(z, eps, request.get("clock", "reconciled"), domains, unit)
     rec = {"request": request, "as_of": data("index.json")["as_of"],
            "pairs": [[fmt(y, 6), fmt(x, 6), fmt(z, 6)] for y, x, z in pairs], "stamps": stamps}
     rec["id"] = hashlib.sha256(canonical(rec).encode()).hexdigest()

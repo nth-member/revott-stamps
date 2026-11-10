@@ -1,8 +1,9 @@
 /* REVOTT stamps, in the browser: the same computation as stage/stamp.py, exactly (tests/fidelity.mjs).
 
-   A pair (Y, X) reads TNLDY Z = 14160 + 100·(Y + X). The variac ε, in X units, is a window of ±100·ε TNLDY
+   A pair (Y, X) reads TNLDY Z = Ztp + U·(Y + X), REVOTT's Ztp = 14160 and U = 100 days unless the request sets
+   "ztp" and "unit" (days: a decimal or a ratio, as 17640/48.3). The variac ε, in X units, is a window of ±U·ε TNLDY
    about it; an item is stamped onto the pair when its own TNLDY -- its instant on the chosen clock, read on
-   the Nsukka/Yg clock (nsukka-yg-clock.js) -- lies in the window: |Z(item) − Z(pair)| ≤ 100·ε. All
+   the Nsukka/Yg clock (nsukka-yg-clock.js) -- lies in the window: |Z(item) − Z(pair)| ≤ U·ε. All
    arithmetic is exact (BigInt fractions), so the browser's record, and its SHA-256, are the reference's.
 
    Stamp.create(load) -> { run(request) }, where load(name) returns a Promise of docs/data/<name>.
@@ -23,6 +24,15 @@
   const int = n => [BigInt(n), 1n];
   const floorDiv = (n, d) => { const q = n / d; return (n % d !== 0n && (n < 0n) !== (d < 0n)) ? q - 1n : q; };
   const pow10 = k => 10n ** BigInt(k);
+
+  /* A unit in days: a decimal, or a ratio of two, as 17640/48.3 (stage/stamp.py unit_of). */
+  function unitOf(v) {
+    const s = String(v).trim(), parts = s.split("/");
+    let u = parts.length > 1 ? [dec(parts[0].trim())[0] * dec(parts[1].trim())[1], dec(parts[0].trim())[1] * dec(parts[1].trim())[0]] : dec(s);
+    if (u[1] < 0n) u = [-u[0], -u[1]];
+    if (u[0] <= 0n) throw new Error("the unit must be positive");
+    return u;
+  }
 
   /* An exact fraction to `places` decimals, rounded half away from zero, as stage/stamp.py fmt. */
   function fmt([n, d], places = 6) {
@@ -96,9 +106,9 @@
       return [present, cov];
     }
 
-    async function stampZ(z, eps, clockName, domains) {
+    async function stampZ(z, eps, clockName, domains, unit) {
       const [idx, srcs, cov] = await Promise.all([get("index.json"), get("sources.json"), get("coverage.json")]);
-      const h = mul(int(100), eps), pos = CLOCKS[clockName], m = clockName === "reconciled" ? 0n : MARGIN;
+      const h = mul(unit, eps), pos = CLOCKS[clockName], m = clockName === "reconciled" ? 0n : MARGIN;
       const lo = sub(z, h), hi = add(z, h), a = edge(lo, true), b = edge(hi, false);
       const status = b < idx.archive_start ? "before the archive" : a > idx.as_of ? "ahead"
                    : b > idx.as_of ? "pending" : a < idx.archive_start ? "partly before the archive" : "stamped";
@@ -129,21 +139,22 @@
     async function run(request, onProgress) {
       const [idx, keys] = await Promise.all([get("index.json"), get("keys.json")]);
       const eps = dec(request.eps), domains = new Set(request.domains);
+      const ztp = "ztp" in request ? dec(request.ztp) : int(14160), unit = "unit" in request ? unitOf(request.unit) : int(100);
       const pairs = [];
-      for (const y of ysOf(request.y, keys)) for (const x of xsOf(request.x, keys)) pairs.push([y, x, add(int(14160), mul(int(100), add(y, x)))]);
+      for (const y of ysOf(request.y, keys)) for (const x of xsOf(request.x, keys)) pairs.push([y, x, add(ztp, mul(unit, add(y, x)))]);
       const zs = new Map();                                 // one stamp per TNLDY to 6 decimals, the first of any tie
       for (const z of pairs.map(p => p[2]).sort(cmp)) { const k = fmt(z, 6); if (!zs.has(k)) zs.set(k, z); }
       const order = [...zs.values()], stamps = {};
       let n = 0;
       for (const z of order) {
-        stamps[fmt(z, 6)] = await stampZ(z, eps, request.clock || "reconciled", domains);
+        stamps[fmt(z, 6)] = await stampZ(z, eps, request.clock || "reconciled", domains, unit);
         if (onProgress && ++n % 500 === 0) await onProgress(n, order.length);
       }
       const rec = { request, as_of: idx.as_of, pairs: pairs.map(([y, x, z]) => [fmt(y, 6), fmt(x, 6), fmt(z, 6)]), stamps };
       rec.id = await sha256(canonical(rec));
       return rec;
     }
-    return { run, fmt, dec };
+    return { run, fmt, dec, unitOf };
   }
 
   /* JSON as Python's json.dumps(obj, ensure_ascii=False, separators=(",", ":"), sort_keys=True) writes it. */

@@ -10,7 +10,7 @@ const Stamp = require(ROOT + "docs/stamp.js");
 const S = Stamp.create(async name => JSON.parse(readFileSync(ROOT + "docs/data/" + name, "utf8")));
 const SIX = ["geopolitical-analysis", "middle-east", "balkans", "world", "russia-eurasia", "science-technology"];
 const ALL = [...new Set(Object.values(JSON.parse(readFileSync(ROOT + "docs/data/sources.json"))).map(v => v[1]))].sort();
-const R = (y, x, eps, clock, domains) => ({ y, x, eps, clock, domains });
+const R = (y, x, eps, clock, domains, g) => ({ y, x, eps, clock, domains, ...g });
 const cases = [
   R({ mode: "value", value: "82.80" }, { mode: "key", x: "-16.5721" }, "0.00005", "reconciled", SIX),
   R({ mode: "value", value: "82.80" }, { mode: "key", x: "-16.5721" }, "0.00005", "seen", SIX),
@@ -30,6 +30,12 @@ const cases = [
   R({ mode: "value", value: "16.90" }, { mode: "key", x: "0.0" }, "0.01", "reconciled", SIX),            // partly before the archive
   R({ mode: "value", value: "24.50" }, { mode: "all" }, "0.005", "reconciled", ALL),
   R({ mode: "keys" }, { mode: "key", x: "-16.5721" }, "0.005", "feed", SIX),
+  // GLOBAL: another turning point Ztp and unit U, Y and X unaltered
+  R({ mode: "value", value: "24.50" }, { mode: "range", from: "-7.6", to: "-7.0" }, "0.0001", "reconciled", SIX, { unit: "17640/48.3" }),
+  R({ mode: "range", from: "16.00", to: "17.00", step: "0.05" }, { mode: "layer", layer: "trumpets", hidden: "both" }, "0.0005", "reconciled", ALL, { unit: "360" }),
+  R({ mode: "value", value: "82.80" }, { mode: "all" }, "0.00002", "feed", SIX, { ztp: "-5000.5", unit: "365.25" }),
+  R({ mode: "value", value: "0.0" }, { mode: "key", x: "0.0" }, "0.00005", "reconciled", SIX, { ztp: "20800" }),
+  R({ mode: "value", value: "82.80" }, { mode: "key", x: "-16.5721" }, "0.00005", "reconciled", SIX, { ztp: "14160.0", unit: "100" }),
 ];
 let bad = 0;
 for (const [k, req] of cases.entries()) {

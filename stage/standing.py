@@ -22,7 +22,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import nsukka_yg_clock as clock  # noqa: E402
-from stamp import canonical, data, dec, fmt, span_of, stamp_z, xs_of, ys_of  # noqa: E402
+from stamp import canonical, data, dec, fmt, span_of, stamp_z, xs_of, ys_of, zmap  # noqa: E402
 
 ROOT = HERE.parent
 OUT = ROOT / "docs" / "stamps"
@@ -48,21 +48,22 @@ def main() -> int:
             book["request"] = req
         done = {r["z"] for r in book["records"]}
         eps, domains = dec(req["eps"]), set(req["domains"])
+        ztp, unit = zmap(req)
         pairs = {}
         for y in ys_of(req["y"]):
             for x in xs_of(req["x"]):
-                pairs.setdefault(F(14160) + 100 * (y + x), []).append([fmt(y, 6), fmt(x, 6)])
+                pairs.setdefault(ztp + unit * (y + x), []).append([fmt(y, 6), fmt(x, 6)])
         nxt = None
         for z in sorted(pairs):
             key = fmt(z, 6)
-            a, b = span_of(z - 100 * eps, z + 100 * eps)
+            a, b = span_of(z - unit * eps, z + unit * eps)
             if b + SETTLE > as_of:
                 if b >= as_of and (nxt is None or b < nxt[1]) and a > first:
                     nxt = (key, b)
                 continue
             if a < first or key in done:
                 continue
-            s = stamp_z(z, eps, req.get("clock", "reconciled"), domains)
+            s = stamp_z(z, eps, req.get("clock", "reconciled"), domains, unit)
             rec = {"z": key, "pairs": pairs[z], "as_of": as_of, **{k: s[k] for k in ("instants", "window", "items", "coverage")}}
             rec["id"] = hashlib.sha256(canonical(rec).encode()).hexdigest()
             book["records"].append(rec)
