@@ -5,29 +5,33 @@ https://nth-member.github.io/revott-stamps/.
 
 A pair reads one TNLDY:
 
-    Z = Ztp + U·(Y + X)        REVOTT's setting: Ztp = 14160, U = 100 days
+    Z = Ztp + Uy·Y + Ux·X      REVOTT's setting: Ztp = 14160, Uy = Ux = 100 days
 
-and the variac ε, in X units, is a window of ±U·ε TNLDY about it. An item of the knowledge-server feeds is
+and the variac ε, in X units, is a window of ±Ux·ε TNLDY about it. An item of the knowledge-server feeds is
 stamped onto the pair when its own TNLDY — its instant on the chosen clock, read from Nsukka on the Yg clock —
 lies in the window:
 
-    |Z(item) − Z(pair)| ≤ U·ε
+    |Z(item) − Z(pair)| ≤ Ux·ε
 
-At U = 100 days, 0.01 X is one day; 0.0001 X, the last digit of a key, is 14.4 minutes. The variac runs from one second to five
+At Ux = 100 days, 0.01 X is one day; 0.0001 X, the last digit of a key, is 14.4 minutes. The variac runs from one second to five
 days. Y is a value, a range with a step, or REVOTT's 401 keys; X is one key, a range of keys, a layer (seals,
-trumpets, vials, horns; hidden, revealed or both) or all 401 keys. Every pair is stamped, once per distinct Z,
-since only Y + X sets the TNLDY; pairs on one level line share their items and each remains its own reading.
+trumpets, vials, horns; hidden, revealed or both) or all 401 keys. Every pair is stamped, once per distinct Z;
+pairs that read one Z share their items (in REVOTT's setting, those on one level line Y + X = constant), and
+each remains its own reading.
 A stamp records what fell in the window, and nothing more.
 
 ## GLOBAL
 
 The page has two tabs. STAMP stamps with REVOTT's setting. GLOBAL has the same Y, X, clock, variac, feeds and
-STAMP button, with the turning point Ztp and the unit U of Y and X set above them: U is 100 days (REVOTT's),
-360 days (yJ), 17640/48.3 days (yG) or any positive number of days, a decimal or a ratio. A link to a GLOBAL
-request opens on the GLOBAL tab. Y, X and
-the keys are never altered; Ztp and U only place them in time. A request carries `"ztp"` and `"unit"` (strings,
-exact) only when they differ from REVOTT's, so a request in REVOTT's setting, and its record, are as before.
-The variac keeps its window in time when U changes; ε, counted in X units, follows U.
+STAMP button, with the turning point Ztp, the unit of Y, Uy, and the unit of X, Ux, set above them, each on its
+own. Each unit is 100 days (REVOTT's), 360 days (yJ), 17640/48.3 days (yG) or any positive number of days, a
+decimal or a ratio. A link to a GLOBAL request opens on the GLOBAL tab.
+
+Y, X and the keys are never altered; Ztp and the units only place them in time. A request carries `"ztp"`,
+`"unit_y"` and `"unit_x"` (strings, exact) only when they differ from REVOTT's, so a request in REVOTT's
+setting, and its record, are as before. An older `"unit"` sets both units. The variac's ε is counted in X
+units: it keeps its window in time when Ux changes, and ε follows Ux. With Y stepped by δ, ε = (Uy/Ux)·δ/2
+tiles time.
 
 ## The clock
 
@@ -112,15 +116,17 @@ each item's headline, link, source and times — no summaries.
 
 ## Fidelity
 
-`tests/fidelity.mjs` runs twenty-two requests through the browser's `docs/stamp.js` and the reference
-`stage/stamp.py`. It compares the records byte for byte, SHA-256 included: 22/22 identical. The requests are:
+`tests/fidelity.mjs` runs twenty-seven requests through the browser's `docs/stamp.js` and the reference
+`stage/stamp.py`. It compares the records byte for byte, SHA-256 included: 27/27 identical. The requests are:
 
 - single pairs on every clock, a one-second window, and a pair whose TNLDY is passed over;
 - the 40,501 pairs of Y 82.30 … 83.30 by 0.01 against all 401 keys, and the 401 keys against the trumpets;
 - in the GDELT tier, a pair on two GDELT days, a window across the first reading, windows over and around
   days GDELT never published, and one partly before the archive;
 - Y 24.50 against all 401 keys, and the 401 keys against X −16.5721;
-- under GLOBAL, U = 17640/48.3, 360 and 365.25 days, Ztp = −5000.5 and 20800, and REVOTT's setting written out.
+- under GLOBAL: both units at 17640/48.3, 360 and 365.25 days; Ztp = −5000.5 and 20800; REVOTT's setting
+  written out; Uy alone and Ux alone; Uy = 360 with Ux = 8400/23; Uy = 360 with Ux = 100 in the feed era; and
+  an older single `"unit"`.
 
     node tests/fidelity.mjs
 

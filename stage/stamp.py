@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """Stamps, exactly: the reference that docs/stamp.js must reproduce (tests/fidelity.mjs).
 
-A pair (Y, X) reads TNLDY Z = Ztp + U·(Y + X): REVOTT's turning point Ztp = 14160 and unit U = 100 days
-unless the request sets others ("ztp", a decimal; "unit", in days, a decimal or a ratio such as 17640/48.3).
-The variac ε, in X units, is a window of ±U·ε TNLDY about it. An item is stamped onto the pair when its own TNLDY -- its instant on the chosen clock,
+A pair (Y, X) reads TNLDY Z = Ztp + Uy·Y + Ux·X: REVOTT's turning point Ztp = 14160 and units Uy = Ux = 100
+days unless the request sets others ("ztp", a decimal; "unit_y" and "unit_x", in days, each a decimal or a
+ratio such as 17640/48.3; an older "unit" sets both). The variac ε, in X units, is a window of ±Ux·ε TNLDY
+about it. An item is stamped onto the pair when its own TNLDY -- its instant on the chosen clock,
 read on the Nsukka/Yg clock -- lies in that window:
 
-    |Z(item) − Z(pair)| ≤ U·ε
+    |Z(item) − Z(pair)| ≤ Ux·ε
 
 Everything is compared in TNLDY, so a window that meets a Yg recalibration is handled by the clock
 itself: TNLDY passed over holds no item, TNLDY met twice holds the items of both instants.
 
 A request names Y (a value, a range with a step, or REVOTT's keys) and X (keys: one, a range, a layer,
-or all of them); every pair is stamped, once per distinct Z, since only Y + X sets the TNLDY. Y, X and
-the keys are never altered: Ztp and U only place them in time.
+or all of them); every pair is stamped, once per distinct Z. Y, X and the keys are never altered: Ztp and
+the units only place them in time.
 """
 from __future__ import annotations
 
@@ -40,7 +41,7 @@ def dec(v) -> F:
     return F(Decimal(str(v)))
 
 
-ZTP, UNIT = F(14160), F(100)          # REVOTT's turning point and unit, in days
+ZTP, UNIT = F(14160), F(100)          # REVOTT's turning point and its unit of Y and of X, in days
 
 
 def unit_of(v) -> F:
@@ -52,9 +53,12 @@ def unit_of(v) -> F:
     return u
 
 
-def zmap(request: dict) -> tuple[F, F]:
-    """(Ztp, U) of a request: REVOTT's 14160 and 100 days unless it sets its own."""
-    return (dec(request["ztp"]) if "ztp" in request else ZTP), (unit_of(request["unit"]) if "unit" in request else UNIT)
+def zmap(request: dict) -> tuple[F, F, F]:
+    """(Ztp, Uy, Ux) of a request: REVOTT's 14160, 100 days and 100 days unless it sets its own."""
+    def unit(k):
+        v = request.get(k, request.get("unit"))
+        return UNIT if v is None else unit_of(v)
+    return (dec(request["ztp"]) if "ztp" in request else ZTP), unit("unit_y"), unit("unit_x")
 
 
 def fmt(v: F, places: int = 6) -> str:
@@ -204,12 +208,12 @@ def stamp(request: dict) -> dict:
     """A request -> its stamps: {request, as_of, pairs: [[y, x, z]], stamps: {z: stamp}, id}."""
     eps = dec(request["eps"])
     domains = set(request["domains"])
-    ztp, unit = zmap(request)
-    pairs = [(y, x, ztp + unit * (y + x)) for y in ys_of(request["y"]) for x in xs_of(request["x"])]
+    ztp, uy, ux = zmap(request)
+    pairs = [(y, x, ztp + uy * y + ux * x) for y in ys_of(request["y"]) for x in xs_of(request["x"])]
     stamps = {}
     for z in sorted(set(p[2] for p in pairs)):          # one stamp per TNLDY to 6 decimals, the first of any tie
         if fmt(z, 6) not in stamps:
-            stamps[fmt(z, 6)] = stamp_z(z, eps, request.get("clock", "reconciled"), domains, unit)
+            stamps[fmt(z, 6)] = stamp_z(z, eps, request.get("clock", "reconciled"), domains, ux)
     rec = {"request": request, "as_of": data("index.json")["as_of"],
            "pairs": [[fmt(y, 6), fmt(x, 6), fmt(z, 6)] for y, x, z in pairs], "stamps": stamps}
     rec["id"] = hashlib.sha256(canonical(rec).encode()).hexdigest()

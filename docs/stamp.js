@@ -1,9 +1,9 @@
 /* REVOTT stamps, in the browser: the same computation as stage/stamp.py, exactly (tests/fidelity.mjs).
 
-   A pair (Y, X) reads TNLDY Z = Ztp + U·(Y + X), REVOTT's Ztp = 14160 and U = 100 days unless the request sets
-   "ztp" and "unit" (days: a decimal or a ratio, as 17640/48.3). The variac ε, in X units, is a window of ±U·ε TNLDY
-   about it; an item is stamped onto the pair when its own TNLDY -- its instant on the chosen clock, read on
-   the Nsukka/Yg clock (nsukka-yg-clock.js) -- lies in the window: |Z(item) − Z(pair)| ≤ U·ε. All
+   A pair (Y, X) reads TNLDY Z = Ztp + Uy·Y + Ux·X, REVOTT's Ztp = 14160 and Uy = Ux = 100 days unless the request
+   sets "ztp", "unit_y" and "unit_x" (days: a decimal or a ratio, as 17640/48.3; an older "unit" sets both). The
+   variac ε, in X units, is a window of ±Ux·ε TNLDY about it; an item is stamped onto the pair when its own TNLDY -- its instant on the chosen clock, read on
+   the Nsukka/Yg clock (nsukka-yg-clock.js) -- lies in the window: |Z(item) − Z(pair)| ≤ Ux·ε. All
    arithmetic is exact (BigInt fractions), so the browser's record, and its SHA-256, are the reference's.
 
    Stamp.create(load) -> { run(request) }, where load(name) returns a Promise of docs/data/<name>.
@@ -139,15 +139,16 @@
     async function run(request, onProgress) {
       const [idx, keys] = await Promise.all([get("index.json"), get("keys.json")]);
       const eps = dec(request.eps), domains = new Set(request.domains);
-      const ztp = "ztp" in request ? dec(request.ztp) : int(14160), unit = "unit" in request ? unitOf(request.unit) : int(100);
-      const pairs = [];
-      for (const y of ysOf(request.y, keys)) for (const x of xsOf(request.x, keys)) pairs.push([y, x, add(ztp, mul(unit, add(y, x)))]);
+      const ztp = "ztp" in request ? dec(request.ztp) : int(14160);
+      const unit = k => { const v = k in request ? request[k] : request.unit; return v === undefined ? int(100) : unitOf(v); };
+      const uy = unit("unit_y"), ux = unit("unit_x"), pairs = [];
+      for (const y of ysOf(request.y, keys)) for (const x of xsOf(request.x, keys)) pairs.push([y, x, add(ztp, add(mul(uy, y), mul(ux, x)))]);
       const zs = new Map();                                 // one stamp per TNLDY to 6 decimals, the first of any tie
       for (const z of pairs.map(p => p[2]).sort(cmp)) { const k = fmt(z, 6); if (!zs.has(k)) zs.set(k, z); }
       const order = [...zs.values()], stamps = {};
       let n = 0;
       for (const z of order) {
-        stamps[fmt(z, 6)] = await stampZ(z, eps, request.clock || "reconciled", domains, unit);
+        stamps[fmt(z, 6)] = await stampZ(z, eps, request.clock || "reconciled", domains, ux);
         if (onProgress && ++n % 500 === 0) await onProgress(n, order.length);
       }
       const rec = { request, as_of: idx.as_of, pairs: pairs.map(([y, x, z]) => [fmt(y, 6), fmt(x, 6), fmt(z, 6)]), stamps };

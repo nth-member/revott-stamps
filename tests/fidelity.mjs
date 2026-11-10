@@ -30,12 +30,18 @@ const cases = [
   R({ mode: "value", value: "16.90" }, { mode: "key", x: "0.0" }, "0.01", "reconciled", SIX),            // partly before the archive
   R({ mode: "value", value: "24.50" }, { mode: "all" }, "0.005", "reconciled", ALL),
   R({ mode: "keys" }, { mode: "key", x: "-16.5721" }, "0.005", "feed", SIX),
-  // GLOBAL: another turning point Ztp and unit U, Y and X unaltered
-  R({ mode: "value", value: "24.50" }, { mode: "range", from: "-7.6", to: "-7.0" }, "0.0001", "reconciled", SIX, { unit: "17640/48.3" }),
-  R({ mode: "range", from: "16.00", to: "17.00", step: "0.05" }, { mode: "layer", layer: "trumpets", hidden: "both" }, "0.0005", "reconciled", ALL, { unit: "360" }),
-  R({ mode: "value", value: "82.80" }, { mode: "all" }, "0.00002", "feed", SIX, { ztp: "-5000.5", unit: "365.25" }),
+  // GLOBAL: another turning point Ztp and units Uy of Y and Ux of X, Y and X unaltered
+  R({ mode: "value", value: "24.50" }, { mode: "range", from: "-7.6", to: "-7.0" }, "0.0001", "reconciled", SIX, { unit_y: "17640/48.3", unit_x: "17640/48.3" }),
+  R({ mode: "range", from: "16.00", to: "17.00", step: "0.05" }, { mode: "layer", layer: "trumpets", hidden: "both" }, "0.0005", "reconciled", ALL, { unit_y: "360", unit_x: "360" }),
+  R({ mode: "value", value: "82.80" }, { mode: "all" }, "0.00002", "feed", SIX, { ztp: "-5000.5", unit_y: "365.25", unit_x: "365.25" }),
   R({ mode: "value", value: "0.0" }, { mode: "key", x: "0.0" }, "0.00005", "reconciled", SIX, { ztp: "20800" }),
-  R({ mode: "value", value: "82.80" }, { mode: "key", x: "-16.5721" }, "0.00005", "reconciled", SIX, { ztp: "14160.0", unit: "100" }),
+  R({ mode: "value", value: "82.80" }, { mode: "key", x: "-16.5721" }, "0.00005", "reconciled", SIX, { ztp: "14160.0", unit_y: "100", unit_x: "100" }),
+  R({ mode: "value", value: "24.50" }, { mode: "all" }, "0.0005", "reconciled", SIX, { unit_y: "17640/48.3" }),               // Uy alone
+  R({ mode: "keys" }, { mode: "key", x: "-16.5721" }, "0.00005", "page", ALL, { unit_x: "360" }),                             // Ux alone
+  R({ mode: "range", from: "82.00", to: "83.00", step: "0.01" }, { mode: "layer", layer: "seals", hidden: "both" }, "0.0001", "reconciled", SIX,
+    { ztp: "-1000", unit_y: "360", unit_x: "8400/23" }),                                                                         // yJ for Y, yG for X
+  R({ mode: "value", value: "24.50" }, { mode: "range", from: "-7.6", to: "-7.0" }, "0.0001", "reconciled", SIX, { unit: "17640/48.3" }), // an older "unit": both
+  R({ mode: "range", from: "23.05", to: "23.15", step: "0.001" }, { mode: "key", x: "-16.5721" }, "0.0002", "reconciled", SIX, { unit_y: "360" }), // feed era, Uy ≠ Ux
 ];
 let bad = 0;
 for (const [k, req] of cases.entries()) {
