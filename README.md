@@ -21,8 +21,10 @@ A stamp records what fell in the window, and nothing more.
 
 ## GLOBAL
 
-The page's GLOBAL tab sets the turning point Ztp and the unit U of Y and X for every stamp: U is 100 days
-(REVOTT's), 360 days (yJ), 17640/48.3 days (yG) or any positive number of days, a decimal or a ratio. Y, X and
+The page has two tabs. STAMP stamps with REVOTT's setting. GLOBAL has the same Y, X, clock, variac, feeds and
+STAMP button, with the turning point Ztp and the unit U of Y and X set above them: U is 100 days (REVOTT's),
+360 days (yJ), 17640/48.3 days (yG) or any positive number of days, a decimal or a ratio. A link to a GLOBAL
+request opens on the GLOBAL tab. Y, X and
 the keys are never altered; Ztp and U only place them in time. A request carries `"ztp"` and `"unit"` (strings,
 exact) only when they differ from REVOTT's, so a request in REVOTT's setting, and its record, are as before.
 The variac keeps its window in time when U changes; ε, counted in X units, follows U.
