@@ -14,8 +14,8 @@ lies in the window:
     |Z(item) − Z(pair)| ≤ Ux·ε
 
 At Ux = 100 days, 0.01 X is one day; 0.0001 X, the last digit of a key, is 14.4 minutes. The variac runs from one second to five
-days. Y is a value, a range with a step, or REVOTT's 401 keys; X is one key, a range of keys, a layer (seals,
-trumpets, vials, horns; hidden, revealed or both) or all 401 keys. Every pair is stamped, once per distinct Z;
+days. Y is a value, a range with a step, or REVOTT's 539 keys; X is one key, a range of keys, a layer (seals,
+trumpets, vials, horns; hidden, revealed or both) or all 539 keys. Every pair is stamped, once per distinct Z;
 pairs that read one Z share their items (in REVOTT's setting, those on one level line Y + X = constant), and
 each remains its own reading.
 A stamp records what fell in the window, and nothing more.
@@ -102,7 +102,7 @@ arriving later belong to a later reading.
 |---|---|
 | `stage/history.py` | keeps every JOMO SFO-WAM feed snapshot: those made on this computer from that repository's reflog, those made on GitHub (since 2026-11-03) from its 30-day log, `feeds/history/` — so a snapshot taken while this computer sleeps is kept when it wakes |
 | `stage/pagetime.py` | reads each article page once for the time it states: this project's user agent, robots.txt obeyed, one request per site every two seconds, a site that refuses left alone; Google News links lead to Google and are not read |
-| `stage/archive.py` | one instant per item, filed on Nsukka's days in `docs/data/days/`, with the index, the sources, their coverage and REVOTT's 401 keys; the index also holds the GDELT tier's first and last days and the days GDELT never published |
+| `stage/archive.py` | one instant per item, filed on Nsukka's days in `docs/data/days/`, with the index, the sources, their coverage and REVOTT's 539 keys; the index also holds the GDELT tier's first and last days and the days GDELT never published |
 | `stage/standing.py` | the standing requests' records |
 | `stage/stamp.py` | the stamp, exactly: the reference for `docs/stamp.js` |
 | `stage/refresh.sh [--push]` | all of the above; commits only `docs/data` and `docs/stamps`, one rolling commit per Nsukka day |
@@ -120,10 +120,10 @@ each item's headline, link, source and times — no summaries.
 `stage/stamp.py`. It compares the records byte for byte, SHA-256 included: 27/27 identical. The requests are:
 
 - single pairs on every clock, a one-second window, and a pair whose TNLDY is passed over;
-- the 40,501 pairs of Y 82.30 … 83.30 by 0.01 against all 401 keys, and the 401 keys against the trumpets;
+- the 54,439 pairs of Y 82.30 … 83.30 by 0.01 against all 539 keys, and the 539 keys against the trumpets;
 - in the GDELT tier, a pair on two GDELT days, a window across the first reading, windows over and around
   days GDELT never published, and one partly before the archive;
-- Y 24.50 against all 401 keys, and the 401 keys against X −16.5721;
+- Y 24.50 against all 539 keys, and the 539 keys against X −16.5721;
 - under GLOBAL: both units at 17640/48.3, 360 and 365.25 days; Ztp = −5000.5 and 20800; REVOTT's setting
   written out; Uy alone and Ux alone; Uy = 360 with Ux = 8400/23; Uy = 360 with Ux = 100 in the feed era; and
   an older single `"unit"`.
